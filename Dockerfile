@@ -27,4 +27,4 @@ RUN php artisan key:generate
 
 # Expose port 8000 and start Laravel server
 EXPOSE 8000
-CMD php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=8000
+CMD php artisan migrate --force && php artisan l5-swagger:generate && php artisan serve --host=0.0.0.0 --port=8000
