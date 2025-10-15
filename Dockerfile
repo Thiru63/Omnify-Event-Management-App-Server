@@ -24,6 +24,9 @@ RUN cp .env.example .env
 # Generate app key
 RUN php artisan key:generate
 
+# Build caches (config, routes, views)
+RUN php artisan config:clear && php artisan cache:clear && php artisan config:cache
+
 # Expose port 8000 and start Laravel server
 EXPOSE 8000
 CMD php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=8000
