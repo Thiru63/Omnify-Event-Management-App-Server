@@ -1,0 +1,1031 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Event Management API",
+        "description": "API for managing events and attendee registrations",
+        "contact": {
+            "name": "API Support",
+            "email": "admin@example.com"
+        },
+        "version": "1.0.0"
+    },
+    "servers": [
+        {
+            "url": "http://localhost:8000/api",
+            "description": "Local Development Server"
+        }
+    ],
+    "paths": {
+        "/events/{event_id}/register": {
+            "post": {
+                "tags": [
+                    "Attendees"
+                ],
+                "summary": "Register an attendee for an event",
+                "description": "Registers a new attendee for the specified event. Prevents overbooking and duplicate email registrations.",
+                "operationId": "registerAttendee",
+                "parameters": [
+                    {
+                        "name": "event_id",
+                        "in": "path",
+                        "description": "ID of the event to register for",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "description": "Attendee registration data",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RegisterAttendeeRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Attendee registered successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Attendee registered successfully"
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/Attendee"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Event not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Event not found"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error or business rule violation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "The given data was invalid"
+                                        },
+                                        "errors": {
+                                            "properties": {
+                                                "email": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string",
+                                                        "example": "This email is already registered for the event."
+                                                    }
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Event is full",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Event has reached maximum capacity"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/events/{event_id}/attendees": {
+            "get": {
+                "tags": [
+                    "Attendees"
+                ],
+                "summary": "Get all attendees for an event",
+                "description": "Retrieves a paginated list of all attendees registered for the specified event.",
+                "operationId": "getEventAttendees",
+                "parameters": [
+                    {
+                        "name": "event_id",
+                        "in": "path",
+                        "description": "ID of the event",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "Number of attendees per page (1-100, default: 15)",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "maximum": 100,
+                            "minimum": 1,
+                            "example": 15
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Page number (default: 1)",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "example": 1
+                        }
+                    },
+                    {
+                        "name": "search_for",
+                        "in": "query",
+                        "description": "search_for term for attendee name or email",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "john"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Attendees retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Attendees retrieved successfully"
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "data": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "$ref": "#/components/schemas/Attendee"
+                                                    }
+                                                },
+                                                "pagination": {
+                                                    "properties": {
+                                                        "current_page": {
+                                                            "type": "integer",
+                                                            "example": 1
+                                                        },
+                                                        "per_page": {
+                                                            "type": "integer",
+                                                            "example": 15
+                                                        },
+                                                        "total": {
+                                                            "type": "integer",
+                                                            "example": 45
+                                                        },
+                                                        "last_page": {
+                                                            "type": "integer",
+                                                            "example": 3
+                                                        },
+                                                        "from": {
+                                                            "type": "integer",
+                                                            "example": 1
+                                                        },
+                                                        "to": {
+                                                            "type": "integer",
+                                                            "example": 15
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                },
+                                                "event": {
+                                                    "properties": {
+                                                        "id": {
+                                                            "type": "integer",
+                                                            "example": 1
+                                                        },
+                                                        "name": {
+                                                            "type": "string",
+                                                            "example": "Tech Conference 2024"
+                                                        },
+                                                        "current_attendees": {
+                                                            "type": "integer",
+                                                            "example": 45
+                                                        },
+                                                        "max_capacity": {
+                                                            "type": "integer",
+                                                            "example": 100
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Event not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Event not found"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/events": {
+            "get": {
+                "tags": [
+                    "Events"
+                ],
+                "summary": "Get paginated list of upcoming events",
+                "description": "Retrieves a paginated list of upcoming events with advanced filtering, sorting, and search capabilities.",
+                "operationId": "getEvents",
+                "parameters": [
+                    {
+                        "name": "timezone",
+                        "in": "query",
+                        "description": "Timezone for event time display (default: Asia/Kolkata)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "America/New_York"
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "Number of events per page (1-100, default: 10)",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "maximum": 100,
+                            "minimum": 1,
+                            "example": 15
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Page number (default: 1)",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "example": 2
+                        }
+                    },
+                    {
+                        "name": "sort_by",
+                        "in": "query",
+                        "description": "Field to sort by (name, location, start_time, end_time, max_capacity, current_attendees)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "name",
+                                "location",
+                                "start_time",
+                                "end_time",
+                                "max_capacity",
+                                "current_attendees"
+                            ],
+                            "example": "start_time"
+                        }
+                    },
+                    {
+                        "name": "sort_order",
+                        "in": "query",
+                        "description": "Sort order (asc, desc)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "asc",
+                                "desc"
+                            ],
+                            "example": "asc"
+                        }
+                    },
+                    {
+                        "name": "search_for",
+                        "in": "query",
+                        "description": "Search term",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "conference"
+                        }
+                    },
+                    {
+                        "name": "search_in",
+                        "in": "query",
+                        "description": "Fields to search in (comma-separated or 'all')",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "name,location"
+                        }
+                    },
+                    {
+                        "name": "filter_by_location",
+                        "in": "query",
+                        "description": "Filter by location(s) - comma separated",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "Bangalore,Delhi"
+                        }
+                    },
+                    {
+                        "name": "seat_available_events",
+                        "in": "query",
+                        "description": "Filter events with available seats",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean",
+                            "example": true
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Events retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Events retrieved successfully"
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "data": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "properties": {
+                                                            "id": {
+                                                                "type": "integer",
+                                                                "example": 1
+                                                            },
+                                                            "name": {
+                                                                "type": "string",
+                                                                "example": "Tech Conference 2024"
+                                                            },
+                                                            "location": {
+                                                                "type": "string",
+                                                                "example": "Bangalore"
+                                                            },
+                                                            "start_time": {
+                                                                "type": "string",
+                                                                "format": "date-time",
+                                                                "example": "2024-12-20T10:00:00+05:30"
+                                                            },
+                                                            "end_time": {
+                                                                "type": "string",
+                                                                "format": "date-time",
+                                                                "example": "2024-12-20T17:00:00+05:30"
+                                                            },
+                                                            "max_capacity": {
+                                                                "type": "integer",
+                                                                "example": 100
+                                                            },
+                                                            "current_attendees": {
+                                                                "type": "integer",
+                                                                "example": 25
+                                                            },
+                                                            "available_capacity": {
+                                                                "type": "integer",
+                                                                "example": 75
+                                                            }
+                                                        },
+                                                        "type": "object"
+                                                    }
+                                                },
+                                                "pagination": {
+                                                    "properties": {
+                                                        "current_page": {
+                                                            "type": "integer",
+                                                            "example": 1
+                                                        },
+                                                        "per_page": {
+                                                            "type": "integer",
+                                                            "example": 10
+                                                        },
+                                                        "total": {
+                                                            "type": "integer",
+                                                            "example": 50
+                                                        },
+                                                        "last_page": {
+                                                            "type": "integer",
+                                                            "example": 5
+                                                        },
+                                                        "from": {
+                                                            "type": "integer",
+                                                            "example": 1
+                                                        },
+                                                        "to": {
+                                                            "type": "integer",
+                                                            "example": 10
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                },
+                                                "filters_applied": {
+                                                    "properties": {
+                                                        "sort_by": {
+                                                            "type": "string",
+                                                            "example": "start_time"
+                                                        },
+                                                        "sort_order": {
+                                                            "type": "string",
+                                                            "example": "asc"
+                                                        },
+                                                        "search_for": {
+                                                            "type": "string",
+                                                            "example": null
+                                                        },
+                                                        "search_in": {
+                                                            "type": "string",
+                                                            "example": "name"
+                                                        },
+                                                        "filter_by_location": {
+                                                            "type": "array",
+                                                            "items": {
+                                                                "type": "string"
+                                                            },
+                                                            "example": null
+                                                        },
+                                                        "seat_available_events": {
+                                                            "type": "boolean",
+                                                            "example": false
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Invalid timezone or parameters",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Invalid timezone provided"
+                                        },
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Timezone must be a valid PHP timezone identifier"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Failed to retrieve events"
+                                        },
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Database connection failed"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Events"
+                ],
+                "summary": "Create a new event",
+                "description": "Creates a new event with the provided details. All events are stored in IST timezone.",
+                "operationId": "createEvent",
+                "requestBody": {
+                    "description": "Event creation data",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "name",
+                                    "location",
+                                    "start_time",
+                                    "end_time",
+                                    "max_capacity"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "maxLength": 255,
+                                        "example": "Tech Conference 2024"
+                                    },
+                                    "location": {
+                                        "type": "string",
+                                        "maxLength": 255,
+                                        "example": "Bangalore Convention Center"
+                                    },
+                                    "start_time": {
+                                        "description": "Start time in Y-m-d H:i:s format (IST timezone)",
+                                        "type": "string",
+                                        "format": "date-time",
+                                        "example": "2024-12-20 10:00:00"
+                                    },
+                                    "end_time": {
+                                        "description": "End time in Y-m-d H:i:s format (must be after start_time)",
+                                        "type": "string",
+                                        "format": "date-time",
+                                        "example": "2024-12-20 17:00:00"
+                                    },
+                                    "max_capacity": {
+                                        "description": "Maximum number of attendees allowed",
+                                        "type": "integer",
+                                        "minimum": 1,
+                                        "example": 100
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Event created successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Event created successfully"
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "name": {
+                                                    "type": "string",
+                                                    "example": "Tech Conference 2024"
+                                                },
+                                                "location": {
+                                                    "type": "string",
+                                                    "example": "Bangalore Convention Center"
+                                                },
+                                                "start_time": {
+                                                    "type": "string",
+                                                    "format": "date-time",
+                                                    "example": "2024-12-20T10:00:00.000000Z"
+                                                },
+                                                "end_time": {
+                                                    "type": "string",
+                                                    "format": "date-time",
+                                                    "example": "2024-12-20T17:00:00.000000Z"
+                                                },
+                                                "max_capacity": {
+                                                    "type": "integer",
+                                                    "example": 100
+                                                },
+                                                "current_attendees": {
+                                                    "type": "integer",
+                                                    "example": 0
+                                                },
+                                                "created_at": {
+                                                    "type": "string",
+                                                    "format": "date-time"
+                                                },
+                                                "updated_at": {
+                                                    "type": "string",
+                                                    "format": "date-time"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "The given data was invalid"
+                                        },
+                                        "errors": {
+                                            "properties": {
+                                                "name": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string",
+                                                        "example": "The name field is required"
+                                                    }
+                                                },
+                                                "start_time": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string",
+                                                        "example": "The start time must be a date after now"
+                                                    }
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Failed to create event"
+                                        },
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Database connection failed"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/events/locations": {
+            "get": {
+                "tags": [
+                    "Events"
+                ],
+                "summary": "Get all unique event locations",
+                "description": "Retrieves a list of all unique locations from upcoming events",
+                "operationId": "getEventLocations",
+                "responses": {
+                    "200": {
+                        "description": "Locations retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Locations retrieved successfully"
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "string",
+                                                "example": "Bangalore Convention Center"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Failed to retrieve locations"
+                                        },
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Database connection failed"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "CreateEventRequest": {
+                "required": [
+                    "name",
+                    "location",
+                    "start_time",
+                    "end_time",
+                    "max_capacity"
+                ],
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "maxLength": 255,
+                        "example": "Tech Conference 2024"
+                    },
+                    "location": {
+                        "type": "string",
+                        "maxLength": 255,
+                        "example": "Bangalore Convention Center"
+                    },
+                    "start_time": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2024-12-01 09:00:00"
+                    },
+                    "end_time": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2024-12-01 17:00:00"
+                    },
+                    "max_capacity": {
+                        "type": "integer",
+                        "maximum": 10000,
+                        "minimum": 1,
+                        "example": 100
+                    }
+                },
+                "type": "object"
+            },
+            "RegisterAttendeeRequest": {
+                "required": [
+                    "name",
+                    "email"
+                ],
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "maxLength": 255,
+                        "example": "John Doe"
+                    },
+                    "email": {
+                        "type": "string",
+                        "format": "email",
+                        "maxLength": 255,
+                        "example": "john@example.com"
+                    }
+                },
+                "type": "object"
+            },
+            "Attendee": {
+                "required": [
+                    "id",
+                    "event_id",
+                    "name",
+                    "email"
+                ],
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "format": "int64",
+                        "example": 1
+                    },
+                    "event_id": {
+                        "type": "integer",
+                        "format": "int64",
+                        "example": 1
+                    },
+                    "name": {
+                        "type": "string",
+                        "maxLength": 255,
+                        "example": "John Doe"
+                    },
+                    "email": {
+                        "type": "string",
+                        "format": "email",
+                        "maxLength": 255,
+                        "example": "john@example.com"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "type": "object"
+            },
+            "Event": {
+                "required": [
+                    "id",
+                    "name",
+                    "location",
+                    "start_time",
+                    "end_time",
+                    "max_capacity",
+                    "current_attendees"
+                ],
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "format": "int64",
+                        "example": 1
+                    },
+                    "name": {
+                        "type": "string",
+                        "maxLength": 255,
+                        "example": "Tech Conference 2024"
+                    },
+                    "location": {
+                        "type": "string",
+                        "maxLength": 255,
+                        "example": "Bangalore Convention Center"
+                    },
+                    "start_time": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2024-12-01T09:00:00.000000Z"
+                    },
+                    "end_time": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2024-12-01T17:00:00.000000Z"
+                    },
+                    "max_capacity": {
+                        "type": "integer",
+                        "format": "int32",
+                        "example": 100
+                    },
+                    "current_attendees": {
+                        "type": "integer",
+                        "format": "int32",
+                        "example": 0
+                    },
+                    "available_capacity": {
+                        "type": "integer",
+                        "format": "int32",
+                        "example": 100
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2024-01-15T10:30:00.000000Z"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2024-01-15T10:30:00.000000Z"
+                    }
+                },
+                "type": "object"
+            }
+        }
+    },
+    "tags": [
+        {
+            "name": "Attendees",
+            "description": "Attendee management endpoints"
+        },
+        {
+            "name": "Events",
+            "description": "Event management endpoints"
+        }
+    ]
+}
