@@ -1,61 +1,272 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Event Management System - Backend
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+A robust Laravel-based Event Management System API with comprehensive features for event creation, attendee registration, and management.
 
-## About Laravel
+## 🚀 Live Deployment
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- **API Base URL**: `https://omnify-event-management-app-server.onrender.com/api`
+- **Swagger Documentation**: [View API Docs](https://omnify-event-management-app-server.onrender.com/swagger-live)
+- **Main Swagger UI**: [View Main Documentation](https://omnify-event-management-app-server.onrender.com/api/documentation)
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## 📋 Features Implemented
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+### Core Features
+✅ **Event Management**
+- Create events with name, location, timing, and capacity
+- List all upcoming events with advanced filtering
+- Get unique event locations
+- Timezone-aware event handling (default: Asia/Kolkata)
 
-## Learning Laravel
+✅ **Attendee Management**
+- Register attendees for events
+- Prevent overbooking (max capacity enforcement)
+- Prevent duplicate email registrations per event
+- View paginated attendee lists with search
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+✅ **Advanced Features**
+- Pagination for both events and attendees
+- Advanced search and filtering capabilities
+- Comprehensive input validation
+- Structured error responses
+- API request logging
+- Rate limiting for security
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+### Bonus Features
+✅ **Swagger/OpenAPI Documentation** - Complete API documentation
+✅ **Unit Tests** - Comprehensive test coverage for events and attendees
+✅ **Timezone Management** - All events stored in IST with timezone conversion
+✅ **Rate Limiting** - Protection against abuse
+✅ **CORS Support** - Frontend-backend communication ready
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## 🏗️ Architecture & Design
 
-## Laravel Sponsors
+### Database Schema
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+```sql
+Events Table:
+- id (Primary Key)
+- name (string)
+- location (string) 
+- start_time (timestamp)
+- end_time (timestamp)
+- max_capacity (integer)
+- current_attendees (integer)
+- created_at, updated_at
 
-### Premium Partners
+Attendees Table:
+- id (Primary Key)
+- event_id (Foreign Key)
+- name (string)
+- email (string)
+- created_at, updated_at
+- Unique constraint: (event_id, email)
+```
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+### Models
 
-## Contributing
+**Event Model** (`app/Models/Event.php`)
+- Handles business logic for event management
+- Scopes for upcoming events, available seats, location filtering
+- Timezone conversion methods
+- Search capabilities across multiple fields
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+**Attendee Model** (`app/Models/Attendee.php`)
+- Manages attendee registrations
+- Scopes for event-specific queries and search
+- Relationship with Event model
 
-## Code of Conduct
+### Controllers
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+**EventController** (`app/Http/Controllers/EventController.php`)
+- `store()` - Create new events
+- `index()` - List events with advanced filtering
+- `getLocations()` - Get unique locations
 
-## Security Vulnerabilities
+**AttendeeController** (`app/Http/Controllers/AttendeeController.php`)
+- `register()` - Register attendees with validation
+- `index()` - Get event attendees with pagination
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+### Request Validation
 
-## License
+**CreateEventRequest** (`app/Http/Requests/CreateEventRequest.php`)
+- Validates event creation data
+- Converts timestamps to IST timezone
+- Ensures start_time is in future, end_time after start_time
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+**RegisterAttendeeRequest** (`app/Http/Requests/RegisterAttendeeRequest.php`)
+- Validates attendee registration
+- Prevents duplicate email registrations per event
+
+## 🔧 API Endpoints
+
+### Events
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/api/events` | Create a new event |
+| `GET` | `/api/events` | List upcoming events with filters |
+| `GET` | `/api/events/locations` | Get unique event locations |
+
+### Attendees
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/api/events/{id}/register` | Register attendee for event |
+| `GET` | `/api/events/{id}/attendees` | Get event attendees |
+
+## 🎯 Advanced Filtering & Search
+
+### Event Listing Features
+- **Pagination**: Customizable page size (1-100)
+- **Sorting**: By name, location, timing, capacity
+- **Search**: Across multiple fields (name, location, timing)
+- **Location Filtering**: Single or multiple locations
+- **Capacity Filtering**: Events with available seats
+- **Timezone Support**: Display events in any timezone
+
+### Query Parameters Examples
+
+```bash
+# Get events sorted by start time
+GET /api/events?sort_by=start_time&sort_order=asc
+
+# Search events in Bangalore with available seats
+GET /api/events?search_for=conference&filter_by_location=Bangalore&seat_available_events=true
+
+# Get events with custom pagination
+GET /api/events?per_page=20&page=2&timezone=America/New_York
+```
+
+## 🛡️ Security & Validation
+
+### Input Validation
+- Event timing validation (future dates, logical ranges)
+- Capacity limits (1-10,000 attendees)
+- Email format validation
+- Unique email enforcement per event
+
+### Rate Limiting
+- **General API**: 60 requests per minute
+- **Event Registration**: 5 requests per minute
+- **Burst Protection**: 10 requests per second
+
+### Error Handling
+Structured error responses with consistent format:
+```json
+{
+  "success": false,
+  "message": "Error description",
+  "errors": { /* validation errors */ }
+}
+```
+
+## 📊 Testing
+
+### Test Coverage
+- **Event Creation**: Valid and invalid scenarios
+- **Attendee Registration**: Success, duplicates, capacity limits
+- **Filtering & Search**: All query parameters tested
+- **Edge Cases**: Past dates, zero capacity, non-existent events
+
+Run tests:
+```bash
+php artisan test
+```
+
+## 🚀 Deployment
+
+### Production Setup
+- **Platform**: Render.com
+- **Database**: PostgreSQL (Production) / SQLite (Development)
+- **PHP Version**: 8.2
+- **Laravel Version**: 12.33.0
+
+### Environment Configuration
+```env
+APP_URL=https://omnify-event-management-app-server.onrender.com
+DB_CONNECTION=pgsql
+APP_TIMEZONE=Asia/Kolkata
+```
+
+## 📚 API Documentation
+
+### Interactive Documentation
+Visit [Swagger UI](https://omnify-event-management-app-server.onrender.com/swagger-live) for:
+- Complete API reference
+- Interactive endpoint testing
+- Request/response schemas
+- Error code documentation
+
+### Sample Requests
+
+**Create Event:**
+```bash
+curl -X POST "https://omnify-event-management-app-server.onrender.com/api/events" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Tech Conference 2024",
+    "location": "Bangalore Convention Center",
+    "start_time": "2024-12-20 10:00:00",
+    "end_time": "2024-12-20 17:00:00",
+    "max_capacity": 100
+  }'
+```
+
+**Register Attendee:**
+```bash
+curl -X POST "https://omnify-event-management-app-server.onrender.com/api/events/1/register" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "John Doe",
+    "email": "john@example.com"
+  }'
+```
+
+## 🔄 Response Format
+
+### Success Response
+```json
+{
+  "success": true,
+  "message": "Operation successful",
+  "data": { /* response data */ }
+}
+```
+
+### Error Response
+```json
+{
+  "success": false,
+  "message": "Error description",
+  "errors": { /* validation errors */ }
+}
+```
+
+## 🎯 Design Principles
+
+### Clean Architecture
+- **Separation of Concerns**: Models, Controllers, Requests, Traits
+- **DRY Principle**: Reusable ApiResponse trait
+- **Single Responsibility**: Each class has focused purpose
+
+### Scalability
+- Database indexing for performance
+- Pagination for large datasets
+- Efficient query building with scopes
+
+### Maintainability
+- Comprehensive documentation
+- Unit test coverage
+- Consistent coding standards
+- Structured error handling
+
+## 📦 Dependencies
+
+- **Laravel Framework**: 12.33.0
+- **L5-Swagger**: API documentation
+- **PHPUnit**: Testing framework
+- **Carbon**: Date/time handling
+
+---
+
+**Next Steps**: Frontend integration with Next.js using the provided API endpoints and Swagger documentation.
