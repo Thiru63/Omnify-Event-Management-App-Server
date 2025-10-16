@@ -6,7 +6,7 @@ A robust Laravel-based Event Management System API with comprehensive features f
 
 - **API Base URL**: `https://omnify-event-management-app-server.onrender.com/api`
 - **Swagger Documentation**: [View API Docs](https://omnify-event-management-app-server.onrender.com/swagger-live)
-- **Main Swagger UI**: [View Main Documentation](https://omnify-event-management-app-server.onrender.com/api/documentation)
+
 
 ## 📋 Features Implemented
 
