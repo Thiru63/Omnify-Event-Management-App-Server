@@ -28,7 +28,7 @@ RUN php artisan key:generate
 
 # Your existing setup commands...
 RUN php artisan config:clear
-RUN php artisan cache:clear
+# RUN php artisan cache:clear
 RUN php artisan view:clear
 
 # Set proper permissions
