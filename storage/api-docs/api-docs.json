@@ -11,7 +11,7 @@
     },
     "servers": [
         {
-            "url": "http://localhost:8000/api",
+            "url": "https://omnify-event-management-app-server.onrender.com/api",
             "description": "Local Development Server"
         }
     ],
