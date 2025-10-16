@@ -34,9 +34,9 @@ RUN mkdir -p database && \
 # Publish Swagger views
 RUN php artisan vendor:publish --tag=l5-swagger-views --force
 
-# Copy pre-made Swagger view with CDN
-COPY swagger-view-fix.sh /tmp/
-RUN chmod +x /tmp/swagger-view-fix.sh && /tmp/swagger-view-fix.sh
+# COMPLETELY REPLACE the Swagger view with HTTPS CDN URLs
+RUN rm -f resources/views/vendor/l5-swagger/index.blade.php
+RUN echo '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Event Management API</title><link rel="stylesheet" type="text/css" href="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui.css" /><link rel="icon" type="image/png" href="https://unpkg.com/swagger-ui-dist@5.9.0/favicon-32x32.png" sizes="32x32" /><link rel="icon" type="image/png" href="https://unpkg.com/swagger-ui-dist@5.9.0/favicon-16x16.png" sizes="16x16" /><style>html { box-sizing: border-box; overflow: -moz-scrollbars-vertical; overflow-y: scroll; } *, *:before, *:after { box-sizing: inherit; } body { margin: 0; background: #fafafa; }</style></head><body><div id="swagger-ui"></div><script src="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui-bundle.js"></script><script src="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui-standalone-preset.js"></script><script>window.onload = function() { const ui = SwaggerUIBundle({ url: "https://omnify-event-management-app-server.onrender.com/api-docs.json", dom_id: "#swagger-ui", deepLinking: true, presets: [ SwaggerUIBundle.presets.apis, SwaggerUIStandalonePreset ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], layout: "StandaloneLayout" }); window.ui = ui; };</script></body></html>' > resources/views/vendor/l5-swagger/index.blade.php
 
 # Generate Swagger docs
 RUN php artisan vendor:publish --provider="L5Swagger\L5SwaggerServiceProvider" --force

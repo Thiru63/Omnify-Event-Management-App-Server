@@ -88,8 +88,47 @@ Route::get('/swagger-debug-full', function() {
 });
 
 // routes/web.php
+// routes/web.php
 Route::get('/swagger-fixed', function() {
-    return view('swagger-fixed');
+    return '
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Event Management API</title>
+        <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui.css" />
+    </head>
+    <body>
+        <div id="swagger-ui"></div>
+        <script src="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui-bundle.js"></script>
+        <script src="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui-standalone-preset.js"></script>
+        <script>
+            window.ui = SwaggerUIBundle({
+                url: "https://omnify-event-management-app-server.onrender.com/api-docs.json",
+                dom_id: "#swagger-ui",
+                deepLinking: true,
+                presets: [
+                    SwaggerUIBundle.presets.apis,
+                    SwaggerUIStandalonePreset
+                ],
+                plugins: [
+                    SwaggerUIBundle.plugins.DownloadUrl
+                ],
+                layout: "StandaloneLayout"
+            });
+        </script>
+    </body>
+    </html>
+    ';
+});
+
+Route::get('/view-debug', function() {
+    $viewPath = resource_path('views/vendor/l5-swagger/index.blade.php');
+    if (!file_exists($viewPath)) {
+        return 'View file does not exist';
+    }
+    
+    $content = file_get_contents($viewPath);
+    return response($content)->header('Content-Type', 'text/plain');
 });
 
 // routes/web.php
