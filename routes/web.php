@@ -21,3 +21,14 @@ Route::get('/swagger-check', function() {
         'file_content_sample' => file_exists($filePath) ? substr(file_get_contents($filePath), 0, 100) : 'File not found'
     ];
 });
+
+// In routes/web.php
+Route::get('/swagger-assets-check', function() {
+    return [
+        'vendor_swagger_exists' => file_exists(base_path('vendor/swagger-api/swagger-ui')),
+        'public_swagger_exists' => file_exists(public_path('vendor/l5-swagger')),
+        'swagger_ui_js' => file_exists(public_path('vendor/l5-swagger/swagger-ui.js')),
+        'swagger_ui_css' => file_exists(public_path('vendor/l5-swagger/swagger-ui.css')),
+        'asset_url' => asset('vendor/l5-swagger/swagger-ui.js'),
+    ];
+});

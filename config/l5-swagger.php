@@ -7,6 +7,7 @@ return [
             'api' => [
                 'title' => 'L5 Swagger UI',
             ],
+            'swagger_ui_assets_path' => 'https://unpkg.com/swagger-ui-dist@5.9.0/',
 
             'routes' => [
                 /*
