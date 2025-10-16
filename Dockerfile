@@ -27,27 +27,34 @@ RUN php artisan key:generate
 # Create SQLite database and set permissions
 RUN mkdir -p database && \
     touch database/database.sqlite && \
-    chmod 775 database/database.sqlite && \
-    chmod -R 775 storage/ && \
-    chmod -R 775 bootstrap/cache/
+    chmod -R 775 storage/ database/ bootstrap/cache/
 
-# Publish Swagger views
-RUN php artisan vendor:publish --tag=l5-swagger-views --force
+# Set production URL
+RUN echo "APP_URL=https://omnify-event-management-app-server.onrender.com" >> .env
 
-# Run the fix script
-COPY fix-swagger.sh /tmp/fix-swagger.sh
-RUN chmod +x /tmp/fix-swagger.sh && /tmp/fix-swagger.sh
+# Create api-docs directory explicitly
+RUN mkdir -p storage/api-docs
 
-# Generate Swagger docs
-RUN php artisan vendor:publish --provider="L5Swagger\L5SwaggerServiceProvider" --force
+# Generate Swagger JSON FIRST
 RUN php artisan l5-swagger:generate
 
-# Clear cache without database dependencies
-RUN php artisan config:clear
-RUN php artisan view:clear
+# Then publish assets
+RUN php artisan vendor:publish --provider="L5Swagger\L5SwaggerServiceProvider" --force
+
+# Publish and fix Swagger views with CDN
+RUN php artisan vendor:publish --tag=l5-swagger-views --force
+
+# Replace ALL asset paths with CDN URLs
+RUN sed -i 's|{{ \$assetPath }}/swagger-ui.css|https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui.css|g' resources/views/vendor/l5-swagger/index.blade.php
+RUN sed -i 's|{{ \$assetPath }}/swagger-ui-bundle.js|https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui-bundle.js|g' resources/views/vendor/l5-swagger/index.blade.php
+RUN sed -i 's|{{ \$assetPath }}/swagger-ui-standalone-preset.js|https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui-standalone-preset.js|g' resources/views/vendor/l5-swagger/index.blade.php
+RUN sed -i 's|{{ \$assetPath }}/favicon-32x32.png|https://unpkg.com/swagger-ui-dist@5.9.0/favicon-32x32.png|g' resources/views/vendor/l5-swagger/index.blade.php
+RUN sed -i 's|{{ \$assetPath }}/favicon-16x16.png|https://unpkg.com/swagger-ui-dist@5.9.0/favicon-16x16.png|g' resources/views/vendor/l5-swagger/index.blade.php
+
+# Clear only safe caches
+RUN php artisan config:clear && php artisan view:clear
 
 # Expose port 8000 and start Laravel server
 EXPOSE 8000
 
-# Run migrations and cache clear in the CMD (after tables are created)
 CMD php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=8000
