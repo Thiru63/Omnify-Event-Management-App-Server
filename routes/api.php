@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\WelcomeController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\AttendeeController;
 use Illuminate\Support\Facades\Route;
@@ -14,6 +15,9 @@ use Illuminate\Support\Facades\Route;
 | be assigned to the "api" middleware group. Make something great!
 |
 */
+
+// API welcome endpoint
+Route::get('/', [WelcomeController::class, 'apiBase'])->name('api.welcome');
 
 // Event management routes
 Route::prefix('events')->group(function () {
@@ -30,3 +34,6 @@ Route::prefix('events')->group(function () {
     Route::get('/{event_id}/attendees', [AttendeeController::class, 'index'])
         ->name('attendees');
 });
+
+// Health check endpoint for API
+Route::get('/health', [WelcomeController::class, 'health'])->name('api.health');

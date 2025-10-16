@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\WelcomeController;
 use App\Http\Controllers\EventController;
 use Illuminate\Support\Facades\Route;
 
@@ -177,4 +178,43 @@ Route::get('/verify-json-fix', function() {
         'has_production_url' => str_contains($jsonContent, 'omnify-event-management-app-server.onrender.com'),
         'servers_section' => substr($jsonContent, strpos($jsonContent, '"servers"'), 200)
     ];
+});
+
+// Root endpoint - Welcome page
+Route::get('/', [WelcomeController::class, 'welcome'])->name('welcome');
+
+// API base endpoint
+Route::get('/api', [WelcomeController::class, 'apiBase'])->name('api.base');
+
+// Health check endpoint
+Route::get('/health', [WelcomeController::class, 'health'])->name('health');
+Route::get('/up', [WelcomeController::class, 'health'])->name('up');
+
+// API Documentation redirect
+Route::get('/docs', function () {
+    return redirect('/swagger-live');
+})->name('docs');
+
+Route::get('/documentation', function () {
+    return redirect('/swagger-live');
+})->name('documentation');
+
+Route::get('/api/documentation', function () {
+    return redirect('/swagger-live');
+})->name('documentation2');
+
+// Fallback for undefined routes - return JSON response
+Route::fallback(function () {
+    return response()->json([
+        'success' => false,
+        'message' => 'Endpoint not found',
+        'error' => 'The requested route does not exist',
+        'available_routes' => [
+            'welcome' => url('/'),
+            'api_base' => url('/api'),
+            'documentation' => url('/swagger-live'),
+            'health_check' => url('/up'),
+            'events' => url('/api/events')
+        ]
+    ], 404);
 });
