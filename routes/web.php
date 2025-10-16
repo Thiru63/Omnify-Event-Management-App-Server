@@ -9,3 +9,15 @@ use Illuminate\Support\Facades\Route;
 //     Route::get('/', [EventController::class, 'index']);
 //     Route::get('/locations', [EventController::class, 'getLocations']);
 // });
+// In routes/web.php
+Route::get('/swagger-check', function() {
+    $filePath = storage_path('api-docs/api-docs.json');
+    
+    return [
+        'file_exists' => file_exists($filePath),
+        'file_size' => file_exists($filePath) ? filesize($filePath) : 0,
+        'storage_writable' => is_writable(storage_path()),
+        'docs_dir_writable' => is_writable(storage_path('api-docs')),
+        'file_content_sample' => file_exists($filePath) ? substr(file_get_contents($filePath), 0, 100) : 'File not found'
+    ];
+});

@@ -24,10 +24,19 @@ RUN cp .env.example .env
 # Generate app key
 RUN php artisan key:generate
 
+# Make sure you copy vendor files
+COPY --chown=www-data:www-data . /var/www/html/
+
+# Set proper permissions
+RUN chown -R www-data:www-data /var/www/html/storage
+RUN chown -R www-data:www-data /var/www/html/bootstrap/cache
+
 RUN php artisan vendor:publish --provider="L5Swagger\L5SwaggerServiceProvider" --force
 RUN php artisan l5-swagger:generate
 RUN chmod -R 775 storage/
 RUN chown -R www-data:www-data storage/
+
+
 
 
 # Expose port 8000 and start Laravel server
