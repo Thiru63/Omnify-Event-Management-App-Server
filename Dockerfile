@@ -41,11 +41,12 @@ RUN php artisan vendor:publish --tag=l5-swagger-views --force && \
 RUN php artisan vendor:publish --provider="L5Swagger\L5SwaggerServiceProvider" --force
 RUN php artisan l5-swagger:generate
 
-# Clear cache
+# Clear cache without database dependencies
 RUN php artisan config:clear
-RUN php artisan cache:clear
 RUN php artisan view:clear
 
 # Expose port 8000 and start Laravel server
 EXPOSE 8000
-CMD php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=8000
+
+# Run migrations and cache clear in the CMD (after tables are created)
+CMD php artisan migrate --force && php artisan cache:clear && php artisan serve --host=0.0.0.0 --port=8000
