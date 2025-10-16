@@ -26,7 +26,7 @@ RUN php artisan key:generate
 
 # Make sure you copy vendor files
 RUN php artisan config:clear
-RUN php artisan cache:clear
+# RUN php artisan cache:clear
 RUN php artisan view:clear
 
 # Republish all assets
