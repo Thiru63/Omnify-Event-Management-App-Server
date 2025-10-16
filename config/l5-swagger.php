@@ -17,7 +17,6 @@ return [
                     base_path('app'),
                 ],
             ],
-            'swagger_ui_assets_path' => 'https://unpkg.com/swagger-ui-dist@5.9.0/',
         ],
     ],
     'defaults' => [
