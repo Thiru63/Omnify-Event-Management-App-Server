@@ -35,11 +35,11 @@ RUN echo "APP_URL=https://omnify-event-management-app-server.onrender.com" >> .e
 # Create api-docs directory explicitly
 RUN mkdir -p storage/api-docs
 
-# Generate Swagger JSON FIRST
-RUN php artisan l5-swagger:generate
-
-# Then publish assets
+# Publish Swagger config FIRST
 RUN php artisan vendor:publish --provider="L5Swagger\L5SwaggerServiceProvider" --force
+
+# Then generate Swagger JSON
+RUN php artisan l5-swagger:generate
 
 # Publish and fix Swagger views with CDN
 RUN php artisan vendor:publish --tag=l5-swagger-views --force

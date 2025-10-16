@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\Route;
 //     Route::get('/locations', [EventController::class, 'getLocations']);
 // });
 // In routes/web.php
+
+// DIRECT JSON ROUTE - This will definitely work
 Route::get('/api-docs.json', function() {
     $jsonPath = storage_path('api-docs/api-docs.json');
     
@@ -70,6 +72,8 @@ Route::get('/swagger-live', function() {
     </html>
     ';
 });
+
+// Your existing event and attendee routes below...
 
 Route::get('/swagger-check', function() {
     $filePath = storage_path('api-docs/api-docs.json');
