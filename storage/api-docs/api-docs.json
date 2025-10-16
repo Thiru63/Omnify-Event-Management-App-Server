@@ -12,7 +12,7 @@
     "servers": [
         {
             "url": "https://omnify-event-management-app-server.onrender.com/api",
-            "description": "Local Development Server"
+            "description": "Production server"
         }
     ],
     "paths": {
