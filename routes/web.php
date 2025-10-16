@@ -71,3 +71,18 @@ Route::get('/sqlite-test', function() {
         ];
     }
 });
+
+// routes/web.php
+Route::get('/swagger-debug-full', function() {
+    $viewPath = resource_path('views/vendor/l5-swagger/index.blade.php');
+    $viewContent = file_exists($viewPath) ? file_get_contents($viewPath) : 'View file not found';
+    
+    return [
+        'view_file_exists' => file_exists($viewPath),
+        'view_file_size' => file_exists($viewPath) ? filesize($viewPath) : 0,
+        'view_contains_cdn' => str_contains($viewContent, 'unpkg.com'),
+        'config_assets_path' => config('l5-swagger.defaults.swagger_ui_assets_path'),
+        'json_url' => url('api-docs.json'),
+        'json_exists' => file_exists(storage_path('api-docs/api-docs.json')),
+    ];
+});

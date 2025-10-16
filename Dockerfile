@@ -31,11 +31,61 @@ RUN mkdir -p database && \
     chmod -R 775 storage/ && \
     chmod -R 775 bootstrap/cache/
 
-# Publish and modify Swagger views to use CDN (FIX FOR SWAGGER)
-RUN php artisan vendor:publish --tag=l5-swagger-views --force && \
-    sed -i 's|{{ \$assetPath }}/swagger-ui.css|https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui.css|g' resources/views/vendor/l5-swagger/index.blade.php && \
-    sed -i 's|{{ \$assetPath }}/swagger-ui-bundle.js|https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui-bundle.js|g' resources/views/vendor/l5-swagger/index.blade.php && \
-    sed -i 's|{{ \$assetPath }}/swagger-ui-standalone-preset.js|https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui-standalone-preset.js|g' resources/views/vendor/l5-swagger/index.blade.php
+# Publish Swagger views
+RUN php artisan vendor:publish --tag=l5-swagger-views --force
+
+# MANUALLY create Swagger view with CDN (replaces the sed commands)
+RUN cat > resources/views/vendor/l5-swagger/index.blade.php << 'EOF'
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{config('l5-swagger.documentations.default.api.title')}}</title>
+    <link rel="stylesheet" type="text/css" href="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui.css" />
+    <link rel="icon" type="image/png" href="https://unpkg.com/swagger-ui-dist@5.9.0/favicon-32x32.png" sizes="32x32" />
+    <link rel="icon" type="image/png" href="https://unpkg.com/swagger-ui-dist@5.9.0/favicon-16x16.png" sizes="16x16" />
+    <style>
+        html {
+            box-sizing: border-box;
+            overflow: -moz-scrollbars-vertical;
+            overflow-y: scroll;
+        }
+        *,
+        *:before,
+        *:after {
+            box-sizing: inherit;
+        }
+        body {
+            margin: 0;
+            background: #fafafa;
+        }
+    </style>
+</head>
+<body>
+<div id="swagger-ui"></div>
+<script src="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui-bundle.js"></script>
+<script src="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui-standalone-preset.js"></script>
+<script>
+    window.onload = function() {
+        const ui = SwaggerUIBundle({
+            url: "{{ $urlToDocs }}",
+            dom_id: '#swagger-ui',
+            deepLinking: true,
+            presets: [
+                SwaggerUIBundle.presets.apis,
+                SwaggerUIStandalonePreset
+            ],
+            plugins: [
+                SwaggerUIBundle.plugins.DownloadUrl
+            ],
+            layout: "StandaloneLayout"
+        });
+        window.ui = ui;
+    };
+</script>
+</body>
+</html>
+EOF
 
 # Generate Swagger docs
 RUN php artisan vendor:publish --provider="L5Swagger\L5SwaggerServiceProvider" --force
@@ -49,4 +99,4 @@ RUN php artisan view:clear
 EXPOSE 8000
 
 # Run migrations and cache clear in the CMD (after tables are created)
-CMD php artisan migrate --force && php artisan cache:clear && php artisan serve --host=0.0.0.0 --port=8000
+CMD php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=8000
