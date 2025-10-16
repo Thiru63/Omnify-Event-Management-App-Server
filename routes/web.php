@@ -114,6 +114,33 @@ Route::get('/swagger-test', function() {
     </html>
     ';
 });
+
+// routes/web.php
+Route::get('/swagger-cdn-test', function() {
+    $html = '
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Swagger CDN Test</title>
+        <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui.css" />
+    </head>
+    <body>
+        <div id="swagger-ui"></div>
+        <script src="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui-bundle.js"></script>
+        <script>
+            SwaggerUIBundle({
+                url: "' . url('api-docs.json') . '",
+                dom_id: "#swagger-ui",
+                presets: [SwaggerUIBundle.presets.apis],
+                layout: "StandaloneLayout"
+            });
+        </script>
+    </body>
+    </html>
+    ';
+    
+    return response($html)->header('Content-Type', 'text/html');
+});
 // Create a simple view in your views folder
 // resources/views/swagger-fixed.blade.php
 // Copy the HTML from the swagger-index.blade.php above
