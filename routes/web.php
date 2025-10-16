@@ -34,6 +34,19 @@ Route::get('/swagger-assets-check', function() {
 });
 
 // routes/web.php
+Route::get('/swagger-assets-check', function() {
+    return [
+        'vendor_swagger_exists' => file_exists(base_path('vendor/swagger-api/swagger-ui')),
+        'public_swagger_exists' => file_exists(public_path('vendor/l5-swagger')),
+        'swagger_ui_js' => file_exists(public_path('vendor/l5-swagger/swagger-ui.js')),
+        'swagger_ui_css' => file_exists(public_path('vendor/l5-swagger/swagger-ui.css')),
+        'asset_url_js' => asset('vendor/l5-swagger/swagger-ui.js'),
+        'asset_url_css' => asset('vendor/l5-swagger/swagger-ui.css'),
+        'json_url' => url('api-docs.json'),
+    ];
+});
+
+// routes/web.php
 Route::get('/db-test', function() {
     try {
         DB::connection()->getPdo();
