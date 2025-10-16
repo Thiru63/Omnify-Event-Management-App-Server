@@ -183,3 +183,21 @@ Route::get('/swagger-cdn-test', function() {
 // Create a simple view in your views folder
 // resources/views/swagger-fixed.blade.php
 // Copy the HTML from the swagger-index.blade.php above
+
+// routes/web.php
+Route::get('/swagger-view-check', function() {
+    $viewPath = resource_path('views/vendor/l5-swagger/index.blade.php');
+    
+    if (!file_exists($viewPath)) {
+        return 'View file does not exist';
+    }
+    
+    $content = file_get_contents($viewPath);
+    
+    return [
+        'file_exists' => true,
+        'contains_cdn_css' => str_contains($content, 'https://unpkg.com/swagger-ui-dist'),
+        'contains_cdn_js' => str_contains($content, 'swagger-ui-bundle.js'),
+        'contains_local_assets' => str_contains($content, 'docs/asset'),
+    ];
+});

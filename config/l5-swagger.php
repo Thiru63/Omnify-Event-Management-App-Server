@@ -9,6 +9,8 @@ return [
             ],
             'routes' => [
                 'api' => 'api/documentation',
+                'docs' => 'docs',
+                'oauth2_callback' => 'api/oauth2-callback',
             ],
             'paths' => [
                 'use_absolute_path' => true,
@@ -35,5 +37,8 @@ return [
             'views' => base_path('resources/views/vendor/l5-swagger'),
         ],
         'swagger_ui_assets_path' => 'https://unpkg.com/swagger-ui-dist@5.9.0/',
+        'constants' => [
+            'L5_SWAGGER_CONST_HOST' => 'https://omnify-event-management-app-server.onrender.com',
+        ],
     ],
 ];
