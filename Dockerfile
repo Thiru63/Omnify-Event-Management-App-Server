@@ -3,8 +3,7 @@ FROM php:8.2-fpm
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
-    git curl libpq-dev zip unzip libonig-dev libzip-dev && \
-    docker-php-ext-install pdo pdo_pgsql mbstring zip
+    git curl libpq-dev zip unzip libonidocker-php-ext-install pdo pdo_pgsql mbstring zip
 
 # Install Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
@@ -35,23 +34,18 @@ RUN echo "APP_URL=https://omnify-event-management-app-server.onrender.com" >> .e
 # Create api-docs directory explicitly
 RUN mkdir -p storage/api-docs
 
-# Publish Swagger config FIRST
+# Publish Swagger config
 RUN php artisan vendor:publish --provider="L5Swagger\L5SwaggerServiceProvider" --force
 
-# Then generate Swagger JSON
+# Generate Swagger JSON
 RUN php artisan l5-swagger:generate
 
-# Publish and fix Swagger views with CDN
-RUN php artisan vendor:publish --tag=l5-swagger-views --force
+# FIX THE JSON - Replace ALL localhost occurrences with production URL
+RUN sed -i 's|http://localhost:8000/api|https://omnify-event-management-app-server.onrender.com/api|g' storage/api-docs/api-docs.json
+RUN sed -i 's|Local Development Server|Production Server|g' storage/api-docs/api-docs.json
+RUN sed -i 's|http://localhost:8000|https://omnify-event-management-app-server.onrender.com|g' storage/api-docs/api-docs.json
 
-# Replace ALL asset paths with CDN URLs
-RUN sed -i 's|{{ \$assetPath }}/swagger-ui.css|https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui.css|g' resources/views/vendor/l5-swagger/index.blade.php
-RUN sed -i 's|{{ \$assetPath }}/swagger-ui-bundle.js|https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui-bundle.js|g' resources/views/vendor/l5-swagger/index.blade.php
-RUN sed -i 's|{{ \$assetPath }}/swagger-ui-standalone-preset.js|https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui-standalone-preset.js|g' resources/views/vendor/l5-swagger/index.blade.php
-RUN sed -i 's|{{ \$assetPath }}/favicon-32x32.png|https://unpkg.com/swagger-ui-dist@5.9.0/favicon-32x32.png|g' resources/views/vendor/l5-swagger/index.blade.php
-RUN sed -i 's|{{ \$assetPath }}/favicon-16x16.png|https://unpkg.com/swagger-ui-dist@5.9.0/favicon-16x16.png|g' resources/views/vendor/l5-swagger/index.blade.php
-
-# Clear only safe caches
+# Clear caches
 RUN php artisan config:clear && php artisan view:clear
 
 # Expose port 8000 and start Laravel server

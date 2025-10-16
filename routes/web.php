@@ -161,3 +161,20 @@ Route::get('/check-json-structure', function() {
         'has_8000' => str_contains($jsonContent, '8000')
     ];
 });
+
+Route::get('/verify-json-fix', function() {
+    $jsonPath = storage_path('api-docs/api-docs.json');
+    
+    if (!file_exists($jsonPath)) {
+        return response()->json(['error' => 'JSON file not found'], 404);
+    }
+    
+    $jsonContent = file_get_contents($jsonPath);
+    
+    return [
+        'has_localhost' => str_contains($jsonContent, 'localhost'),
+        'has_8000' => str_contains($jsonContent, '8000'),
+        'has_production_url' => str_contains($jsonContent, 'omnify-event-management-app-server.onrender.com'),
+        'servers_section' => substr($jsonContent, strpos($jsonContent, '"servers"'), 200)
+    ];
+});
