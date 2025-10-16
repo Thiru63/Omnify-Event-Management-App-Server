@@ -32,3 +32,19 @@ Route::get('/swagger-assets-check', function() {
         'asset_url' => asset('vendor/l5-swagger/swagger-ui.js'),
     ];
 });
+
+// routes/web.php
+Route::get('/db-test', function() {
+    try {
+        DB::connection()->getPdo();
+        return [
+            'status' => 'Connected',
+            'database' => DB::connection()->getDatabaseName(),
+        ];
+    } catch (\Exception $e) {
+        return [
+            'status' => 'Failed',
+            'error' => $e->getMessage(),
+        ];
+    }
+});
