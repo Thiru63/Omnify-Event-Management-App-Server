@@ -24,21 +24,27 @@ RUN cp .env.example .env
 # Generate app key
 RUN php artisan key:generate
 
+# Create SQLite database and set permissions
+RUN mkdir -p database && \
+    touch database/database.sqlite && \
+    chmod 775 database/database.sqlite && \
+    chmod -R 775 storage/ && \
+    chmod -R 775 bootstrap/cache/
 
-
-# Your existing setup commands...
-RUN php artisan config:clear
-# RUN php artisan cache:clear
-RUN php artisan view:clear
-
-# Set proper permissions
-RUN chmod -R 775 storage/
-RUN chown -R www-data:www-data storage/
+# Publish and modify Swagger views to use CDN (FIX FOR SWAGGER)
+RUN php artisan vendor:publish --tag=l5-swagger-views --force && \
+    sed -i 's|{{ \$assetPath }}/swagger-ui.css|https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui.css|g' resources/views/vendor/l5-swagger/index.blade.php && \
+    sed -i 's|{{ \$assetPath }}/swagger-ui-bundle.js|https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui-bundle.js|g' resources/views/vendor/l5-swagger/index.blade.php && \
+    sed -i 's|{{ \$assetPath }}/swagger-ui-standalone-preset.js|https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui-standalone-preset.js|g' resources/views/vendor/l5-swagger/index.blade.php
 
 # Generate Swagger docs
 RUN php artisan vendor:publish --provider="L5Swagger\L5SwaggerServiceProvider" --force
 RUN php artisan l5-swagger:generate
 
+# Clear cache
+RUN php artisan config:clear
+RUN php artisan cache:clear
+RUN php artisan view:clear
 
 # Expose port 8000 and start Laravel server
 EXPOSE 8000
