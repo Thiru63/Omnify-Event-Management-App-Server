@@ -34,10 +34,9 @@ RUN mkdir -p database && \
 # Publish Swagger views
 RUN php artisan vendor:publish --tag=l5-swagger-views --force
 
-# Replace Swagger assets with CDN URLs using multiple RUN commands
-RUN sed -i 's|{{ \$assetPath }}/swagger-ui.css|https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui.css|g' resources/views/vendor/l5-swagger/index.blade.php
-RUN sed -i 's|{{ \$assetPath }}/swagger-ui-bundle.js|https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui-bundle.js|g' resources/views/vendor/l5-swagger/index.blade.php
-RUN sed -i 's|{{ \$assetPath }}/swagger-ui-standalone-preset.js|https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui-standalone-preset.js|g' resources/views/vendor/l5-swagger/index.blade.php
+# Copy pre-made Swagger view with CDN
+COPY swagger-view-fix.sh /tmp/
+RUN chmod +x /tmp/swagger-view-fix.sh && /tmp/swagger-view-fix.sh
 
 # Generate Swagger docs
 RUN php artisan vendor:publish --provider="L5Swagger\L5SwaggerServiceProvider" --force
