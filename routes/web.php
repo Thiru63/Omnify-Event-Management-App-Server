@@ -48,3 +48,21 @@ Route::get('/db-test', function() {
         ];
     }
 });
+
+// routes/web.php
+Route::get('/sqlite-test', function() {
+    try {
+        \DB::connection()->getPdo();
+        return [
+            'status' => 'Connected to SQLite',
+            'database' => \DB::connection()->getDatabaseName(),
+            'file_exists' => file_exists(database_path('database.sqlite')),
+            'file_size' => filesize(database_path('database.sqlite')),
+        ];
+    } catch (\Exception $e) {
+        return [
+            'status' => 'Failed',
+            'error' => $e->getMessage(),
+        ];
+    }
+});
