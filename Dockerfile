@@ -31,19 +31,9 @@ RUN mkdir -p database && \
     chmod -R 775 storage/ && \
     chmod -R 775 bootstrap/cache/
 
-# Publish Swagger views
+# Publish Swagger views and replace with CDN version
 RUN php artisan vendor:publish --tag=l5-swagger-views --force
-
-# Create a script to replace Swagger assets with CDN
-RUN cat > /tmp/fix-swagger-cdn.sh << 'EOSCRIPT'
-#!/bin/bash
-sed -i 's|{{ \$assetPath }}/swagger-ui.css|https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui.css|g' resources/views/vendor/l5-swagger/index.blade.php
-sed -i 's|{{ \$assetPath }}/swagger-ui-bundle.js|https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui-bundle.js|g' resources/views/vendor/l5-swagger/index.blade.php
-sed -i 's|{{ \$assetPath }}/swagger-ui-standalone-preset.js|https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui-standalone-preset.js|g' resources/views/vendor/l5-swagger/index.blade.php
-EOSCRIPT
-
-# Make script executable and run it
-RUN chmod +x /tmp/fix-swagger-cdn.sh && /tmp/fix-swagger-cdn.sh
+RUN cp swagger-index.blade.php resources/views/vendor/l5-swagger/index.blade.php
 
 # Generate Swagger docs
 RUN php artisan vendor:publish --provider="L5Swagger\L5SwaggerServiceProvider" --force
