@@ -86,3 +86,12 @@ Route::get('/swagger-debug-full', function() {
         'json_exists' => file_exists(storage_path('api-docs/api-docs.json')),
     ];
 });
+
+// routes/web.php
+Route::get('/swagger-fixed', function() {
+    return view('swagger-fixed');
+});
+
+// Create a simple view in your views folder
+// resources/views/swagger-fixed.blade.php
+// Copy the HTML from the swagger-index.blade.php above

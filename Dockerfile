@@ -34,58 +34,16 @@ RUN mkdir -p database && \
 # Publish Swagger views
 RUN php artisan vendor:publish --tag=l5-swagger-views --force
 
-# MANUALLY create Swagger view with CDN (replaces the sed commands)
-RUN cat > resources/views/vendor/l5-swagger/index.blade.php << 'EOF'
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>{{config('l5-swagger.documentations.default.api.title')}}</title>
-    <link rel="stylesheet" type="text/css" href="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui.css" />
-    <link rel="icon" type="image/png" href="https://unpkg.com/swagger-ui-dist@5.9.0/favicon-32x32.png" sizes="32x32" />
-    <link rel="icon" type="image/png" href="https://unpkg.com/swagger-ui-dist@5.9.0/favicon-16x16.png" sizes="16x16" />
-    <style>
-        html {
-            box-sizing: border-box;
-            overflow: -moz-scrollbars-vertical;
-            overflow-y: scroll;
-        }
-        *,
-        *:before,
-        *:after {
-            box-sizing: inherit;
-        }
-        body {
-            margin: 0;
-            background: #fafafa;
-        }
-    </style>
-</head>
-<body>
-<div id="swagger-ui"></div>
-<script src="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui-bundle.js"></script>
-<script src="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui-standalone-preset.js"></script>
-<script>
-    window.onload = function() {
-        const ui = SwaggerUIBundle({
-            url: "{{ $urlToDocs }}",
-            dom_id: '#swagger-ui',
-            deepLinking: true,
-            presets: [
-                SwaggerUIBundle.presets.apis,
-                SwaggerUIStandalonePreset
-            ],
-            plugins: [
-                SwaggerUIBundle.plugins.DownloadUrl
-            ],
-            layout: "StandaloneLayout"
-        });
-        window.ui = ui;
-    };
-</script>
-</body>
-</html>
-EOF
+# Create a script to replace Swagger assets with CDN
+RUN cat > /tmp/fix-swagger-cdn.sh << 'EOSCRIPT'
+#!/bin/bash
+sed -i 's|{{ \$assetPath }}/swagger-ui.css|https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui.css|g' resources/views/vendor/l5-swagger/index.blade.php
+sed -i 's|{{ \$assetPath }}/swagger-ui-bundle.js|https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui-bundle.js|g' resources/views/vendor/l5-swagger/index.blade.php
+sed -i 's|{{ \$assetPath }}/swagger-ui-standalone-preset.js|https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui-standalone-preset.js|g' resources/views/vendor/l5-swagger/index.blade.php
+EOSCRIPT
+
+# Make script executable and run it
+RUN chmod +x /tmp/fix-swagger-cdn.sh && /tmp/fix-swagger-cdn.sh
 
 # Generate Swagger docs
 RUN php artisan vendor:publish --provider="L5Swagger\L5SwaggerServiceProvider" --force
