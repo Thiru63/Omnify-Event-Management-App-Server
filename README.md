@@ -269,4 +269,4 @@ curl -X POST "https://omnify-event-management-app-server.onrender.com/api/events
 
 ---
 
-**Next Steps**: Frontend integration with Next.js using the provided API endpoints and Swagger documentation.
+**Next Steps**: Frontend integration with Next.js using the provided API endpoints and Swagger documentation.Explore [here](https://github.com/Thiru63/Omnify-Event-Management-App-UI) and  [Mange Your Events](https://omnify-event-management-app.vercel.app/dashboard)
