@@ -180,6 +180,46 @@ Route::get('/verify-json-fix', function() {
     ];
 });
 
+Route::get('/debug-timezone', function () {
+    // Test with a sample event creation
+    $sampleStart = '2024-12-20 10:00:00';
+    $sampleEnd = '2024-12-20 17:00:00';
+    
+    $carbonStart = Carbon::parse($sampleStart);
+    $carbonEnd = Carbon::parse($sampleEnd);
+    
+    return response()->json([
+        'input_times' => [
+            'start_time' => $sampleStart,
+            'end_time' => $sampleEnd,
+        ],
+        'carbon_parsed' => [
+            'start_time' => $carbonStart->format('Y-m-d H:i:s'),
+            'end_time' => $carbonEnd->format('Y-m-d H:i:s'),
+            'start_time_timezone' => $carbonStart->timezoneName,
+            'end_time_timezone' => $carbonEnd->timezoneName,
+        ],
+        'database_storage' => [
+            'expected_storage' => 'UTC timestamps',
+            'app_timezone' => config('app.timezone'),
+        ],
+        'conversion_examples' => [
+            'asia_kolkata' => [
+                'start' => $carbonStart->copy()->setTimezone('Asia/Kolkata')->format('c'),
+                'end' => $carbonEnd->copy()->setTimezone('Asia/Kolkata')->format('c'),
+            ],
+            'america_new_york' => [
+                'start' => $carbonStart->copy()->setTimezone('America/New_York')->format('c'),
+                'end' => $carbonEnd->copy()->setTimezone('America/New_York')->format('c'),
+            ],
+            'europe_london' => [
+                'start' => $carbonStart->copy()->setTimezone('Europe/London')->format('c'),
+                'end' => $carbonEnd->copy()->setTimezone('Europe/London')->format('c'),
+            ],
+        ]
+    ]);
+});
+
 // Root endpoint - Welcome page
 Route::get('/', [WelcomeController::class, 'welcome'])->name('welcome');
 

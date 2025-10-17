@@ -48,20 +48,32 @@ class Event extends Model
     }
 
     public function toTimezone(string $timezone): array
-    {
-        return [
-            'id' => $this->id,
-            'name' => $this->name,
-            'location' => $this->location,
-            'start_time' => $this->start_time->setTimezone($timezone)->toISOString(),
-            'end_time' => $this->end_time->setTimezone($timezone)->toISOString(),
-            'max_capacity' => $this->max_capacity,
-            'current_attendees' => $this->current_attendees,
-            'available_capacity' => $this->max_capacity - $this->current_attendees,
-            'created_at' => $this->created_at->setTimezone($timezone)->toISOString(),
-            'updated_at' => $this->updated_at->setTimezone($timezone)->toISOString(),
-        ];
-    }
+{
+    // Direct conversion from Eloquent's Carbon instances
+    $startTime = $this->start_time->copy()->setTimezone($timezone);
+    $endTime = $this->end_time->copy()->setTimezone($timezone);
+    $createdAt = $this->created_at->copy()->setTimezone($timezone);
+    $updatedAt = $this->updated_at->copy()->setTimezone($timezone);
+
+    return [
+        'id' => $this->id,
+        'name' => $this->name,
+        'location' => $this->location,
+        'start_time' => $startTime->format('c'), // ISO 8601 with timezone
+        'end_time' => $endTime->format('c'),
+        'start_time_display' => $startTime->format('D, M j, Y g:i A'),
+        'end_time_display' => $endTime->format('D, M j, Y g:i A'),
+        'start_time_local' => $startTime->format('Y-m-d H:i:s'),
+        'end_time_local' => $endTime->format('Y-m-d H:i:s'),
+        'max_capacity' => $this->max_capacity,
+        'current_attendees' => $this->current_attendees,
+        'available_capacity' => $this->max_capacity - $this->current_attendees,
+        'created_at' => $createdAt->format('c'),
+        'updated_at' => $updatedAt->format('c'),
+        'timezone' => $timezone,
+        'timezone_offset' => $startTime->format('P'),
+    ];
+}
 
     public function scopeUpcoming(Builder $query): Builder
     {

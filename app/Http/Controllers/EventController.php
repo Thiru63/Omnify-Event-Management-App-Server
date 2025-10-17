@@ -40,43 +40,42 @@ class EventController extends Controller
      */
 
     /**
-     * @OA\Post(
-     *     path="/events",
-     *     summary="Create a new event",
-     *     description="Creates a new event with the provided details. All events are stored in IST timezone.",
-     *     operationId="createEvent",
-     *     tags={"Events"},
-     *     security={{"bearerAuth": {}}},
-     *     @OA\RequestBody(
-     *         required=true,
-     *         description="Event creation data",
-     *         @OA\JsonContent(
-     *             required={"name", "location", "start_time", "end_time", "max_capacity"},
-     *             @OA\Property(property="name", type="string", maxLength=255, example="Tech Conference 2024"),
-     *             @OA\Property(property="location", type="string", maxLength=255, example="Bangalore Convention Center"),
-     *             @OA\Property(
-     *                 property="start_time", 
-     *                 type="string", 
-     *                 format="date-time", 
-     *                 example="2024-12-20 10:00:00",
-     *                 description="Start time in Y-m-d H:i:s format (IST timezone)"
-     *             ),
-     *             @OA\Property(
-     *                 property="end_time", 
-     *                 type="string", 
-     *                 format="date-time", 
-     *                 example="2024-12-20 17:00:00",
-     *                 description="End time in Y-m-d H:i:s format (must be after start_time)"
-     *             ),
-     *             @OA\Property(
-     *                 property="max_capacity", 
-     *                 type="integer", 
-     *                 minimum=1, 
-     *                 example=100,
-     *                 description="Maximum number of attendees allowed"
-     *             )
-     *         )
-     *     ),
+ * @OA\Post(
+ *     path="/events",
+ *     summary="Create a new event",
+ *     description="Creates a new event with the provided details. All events are stored in UTC timezone and converted to requested timezone when retrieved.",
+ *     operationId="createEvent",
+ *     tags={"Events"},
+ *     @OA\RequestBody(
+ *         required=true,
+ *         description="Event creation data",
+ *         @OA\JsonContent(
+ *             required={"name", "location", "start_time", "end_time", "max_capacity"},
+ *             @OA\Property(property="name", type="string", maxLength=255, example="Tech Conference 2024"),
+ *             @OA\Property(property="location", type="string", maxLength=255, example="Bangalore Convention Center"),
+ *             @OA\Property(
+ *                 property="start_time", 
+ *                 type="string", 
+ *                 format="date-time", 
+ *                 example="2024-12-20T10:00:00Z",
+ *                 description="Start time in ISO 8601 format (UTC recommended)"
+ *             ),
+ *             @OA\Property(
+ *                 property="end_time", 
+ *                 type="string", 
+ *                 format="date-time", 
+ *                 example="2024-12-20T17:00:00Z",
+ *                 description="End time in ISO 8601 format (must be after start_time)"
+ *             ),
+ *             @OA\Property(
+ *                 property="max_capacity", 
+ *                 type="integer", 
+ *                 minimum=1, 
+ *                 example=100,
+ *                 description="Maximum number of attendees allowed"
+ *             )
+ *         )
+ *     ),
      *     @OA\Response(
      *         response=201,
      *         description="Event created successfully",
