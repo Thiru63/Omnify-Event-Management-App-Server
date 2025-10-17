@@ -120,14 +120,16 @@ class EventController extends Controller
     {
         try {  
             
-            $event = Event::create([
-                'name' => $request->validated('name'),
-                'location' => $request->validated('location'),
-                'start_time' => $request->validated('start_time'),
-                'end_time' => $request->validated('end_time'),
-                'max_capacity' => $request->validated('max_capacity'),
-                'current_attendees' => 0,
-            ]);
+              $validatedData = $request->getValidatedData();
+        
+        $event = Event::create([
+            'name' => $validatedData['name'],
+            'location' => $validatedData['location'],
+            'start_time' => $validatedData['start_time'], // UTC
+            'end_time' => $validatedData['end_time'],     // UTC
+            'max_capacity' => $validatedData['max_capacity'],
+            'current_attendees' => 0,
+        ]);
 
             return $this->createdResponse($event->fresh(), 'Event created successfully');
 
