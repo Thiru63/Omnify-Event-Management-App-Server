@@ -56,8 +56,56 @@ class CreateEventRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
-        // Don't convert to UTC before validation - keep original times for validation
-        // Conversion will happen after validation passes
+       if ($this->has('start_time') && !empty($this->start_time)) {
+
+
+
+            $this->merge([
+
+
+                'start_time' => $this->convertToUTC(
+
+
+                    $this->start_time, 
+
+
+                    $this->input('timezone', 'UTC')
+
+
+                ),
+
+
+            ]);
+
+
+        }
+
+
+
+
+
+        if ($this->has('end_time') && !empty($this->end_time)) {
+
+
+            $this->merge([
+
+
+                'end_time' => $this->convertToUTC(
+
+
+                    $this->end_time,
+
+
+                    $this->input('timezone', 'UTC')
+
+
+                ),
+
+
+            ]);
+
+
+        }
     }
 
     /**
