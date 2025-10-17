@@ -10,10 +10,10 @@ use DateTimeZone;
  * @OA\Schema(
  *     schema="CreateEventRequest",
  *     required={"name", "location", "start_time", "end_time", "max_capacity", "timezone"},
- *     @OA\Property(property="name", type="string", maxLength=255, example="Tech Conference 2024"),
+ *     @OA\Property(property="name", type="string", maxLength=255, example="Tech Conference 2025"),
  *     @OA\Property(property="location", type="string", maxLength=255, example="Bangalore Convention Center"),
- *     @OA\Property(property="start_time", type="string", format="date-time", example="2024-12-01 09:00:00"),
- *     @OA\Property(property="end_time", type="string", format="date-time", example="2024-12-01 17:00:00"),
+ *     @OA\Property(property="start_time", type="string", format="date-time", example="2025-12-01 09:00:00"),
+ *     @OA\Property(property="end_time", type="string", format="date-time", example="2025-12-01 17:00:00"),
  *     @OA\Property(property="max_capacity", type="integer", minimum=1, maximum=10000, example=100),
  *     @OA\Property(
  *         property="timezone",

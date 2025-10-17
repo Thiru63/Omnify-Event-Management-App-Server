@@ -43,29 +43,29 @@ class EventController extends Controller
  * @OA\Post(
  *     path="/events",
  *     summary="Create a new event",
- *     description="Creates a new event with the provided details. All events are stored in UTC timezone and converted to requested timezone when retrieved.",
+ *     description="Creates a new event with the provided details. Times are converted from the specified timezone to UTC for storage. Use the /timezones endpoint to get available timezone options.",
  *     operationId="createEvent",
  *     tags={"Events"},
  *     @OA\RequestBody(
  *         required=true,
- *         description="Event creation data",
+ *         description="Event creation data with timezone information",
  *         @OA\JsonContent(
- *             required={"name", "location", "start_time", "end_time", "max_capacity"},
- *             @OA\Property(property="name", type="string", maxLength=255, example="Tech Conference 2024"),
+ *             required={"name", "location", "start_time", "end_time", "max_capacity", "timezone"},
+ *             @OA\Property(property="name", type="string", maxLength=255, example="Tech Conference 2025"),
  *             @OA\Property(property="location", type="string", maxLength=255, example="Bangalore Convention Center"),
  *             @OA\Property(
  *                 property="start_time", 
  *                 type="string", 
  *                 format="date-time", 
- *                 example="2024-12-20T10:00:00Z",
- *                 description="Start time in ISO 8601 format (UTC recommended)"
+ *                 example="2025-12-20 10:00:00",
+ *                 description="Start time in Y-m-d H:i:s format (interpreted in the specified timezone)"
  *             ),
  *             @OA\Property(
  *                 property="end_time", 
  *                 type="string", 
  *                 format="date-time", 
- *                 example="2024-12-20T17:00:00Z",
- *                 description="End time in ISO 8601 format (must be after start_time)"
+ *                 example="2025-12-20 17:00:00",
+ *                 description="End time in Y-m-d H:i:s format (must be after start_time, interpreted in the specified timezone)"
  *             ),
  *             @OA\Property(
  *                 property="max_capacity", 
@@ -73,55 +73,48 @@ class EventController extends Controller
  *                 minimum=1, 
  *                 example=100,
  *                 description="Maximum number of attendees allowed"
+ *             ),
+ *             @OA\Property(
+ *                 property="timezone",
+ *                 type="string",
+ *                 description="Timezone identifier for the input times (e.g., Asia/Kolkata, America/New_York, Europe/London). Required to interpret start_time and end_time correctly.",
+ *                 example="Asia/Kolkata"
  *             )
  *         )
  *     ),
-     *     @OA\Response(
-     *         response=201,
-     *         description="Event created successfully",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="success", type="boolean", example=true),
-     *             @OA\Property(property="message", type="string", example="Event created successfully"),
-     *             @OA\Property(property="data", type="object",
-     *                 @OA\Property(property="id", type="integer", example=1),
-     *                 @OA\Property(property="name", type="string", example="Tech Conference 2024"),
-     *                 @OA\Property(property="location", type="string", example="Bangalore Convention Center"),
-     *                 @OA\Property(property="start_time", type="string", format="date-time", example="2024-12-20T10:00:00.000000Z"),
-     *                 @OA\Property(property="end_time", type="string", format="date-time", example="2024-12-20T17:00:00.000000Z"),
-     *                 @OA\Property(property="max_capacity", type="integer", example=100),
-     *                 @OA\Property(property="current_attendees", type="integer", example=0),
-     *                 @OA\Property(property="created_at", type="string", format="date-time"),
-     *                 @OA\Property(property="updated_at", type="string", format="date-time")
-     *             )
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=422,
-     *         description="Validation error",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="success", type="boolean", example=false),
-     *             @OA\Property(property="message", type="string", example="The given data was invalid"),
-     *             @OA\Property(property="errors", type="object",
-     *                 @OA\Property(property="name", type="array", 
-     *                     @OA\Items(type="string", example="The name field is required")
-     *                 ),
-     *                 @OA\Property(property="start_time", type="array",
-     *                     @OA\Items(type="string", example="The start time must be a date after now")
-     *                 )
-     *             )
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=500,
-     *         description="Internal server error",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="success", type="boolean", example=false),
-     *             @OA\Property(property="message", type="string", example="Failed to create event"),
-     *             @OA\Property(property="error", type="string", example="Database connection failed")
-     *         )
-     *     )
-     * )
-     */
+ *     @OA\Response(
+ *         response=201,
+ *         description="Event created successfully",
+ *         @OA\JsonContent(
+ *             @OA\Property(property="success", type="boolean", example=true),
+ *             @OA\Property(property="message", type="string", example="Event created successfully"),
+ *             @OA\Property(property="data", ref="#/components/schemas/Event")
+ *         )
+ *     ),
+ *     @OA\Response(
+ *         response=422,
+ *         description="Validation error",
+ *         @OA\JsonContent(
+ *             @OA\Property(property="success", type="boolean", example=false),
+ *             @OA\Property(property="message", type="string", example="The given data was invalid"),
+ *             @OA\Property(property="errors", type="object",
+ *                 @OA\Property(property="timezone", type="array",
+ *                     @OA\Items(type="string", example="The timezone field is required.")
+ *                 )
+ *             )
+ *         )
+ *     ),
+ *     @OA\Response(
+ *         response=500,
+ *         description="Internal server error",
+ *         @OA\JsonContent(
+ *             @OA\Property(property="success", type="boolean", example=false),
+ *             @OA\Property(property="message", type="string", example="Failed to create event"),
+ *             @OA\Property(property="error", type="string", example="Database connection failed")
+ *         )
+ *     )
+ * )
+ */
 
     public function store(CreateEventRequest $request): JsonResponse
     {

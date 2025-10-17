@@ -13,15 +13,15 @@ use Carbon\Carbon;
  *     type="object",
  *     required={"id", "name", "location", "start_time", "end_time", "max_capacity", "current_attendees"},
  *     @OA\Property(property="id", type="integer", format="int64", example=1),
- *     @OA\Property(property="name", type="string", maxLength=255, example="Tech Conference 2024"),
+ *     @OA\Property(property="name", type="string", maxLength=255, example="Tech Conference 2025"),
  *     @OA\Property(property="location", type="string", maxLength=255, example="Bangalore Convention Center"),
- *     @OA\Property(property="start_time", type="string", format="date-time", example="2024-12-01T09:00:00.000000Z"),
- *     @OA\Property(property="end_time", type="string", format="date-time", example="2024-12-01T17:00:00.000000Z"),
+ *     @OA\Property(property="start_time", type="string", format="date-time", example="2025-12-01T09:00:00.000000Z"),
+ *     @OA\Property(property="end_time", type="string", format="date-time", example="2025-12-01T17:00:00.000000Z"),
  *     @OA\Property(property="max_capacity", type="integer", format="int32", example=100),
  *     @OA\Property(property="current_attendees", type="integer", format="int32", example=0),
  *     @OA\Property(property="available_capacity", type="integer", format="int32", example=100),
- *     @OA\Property(property="created_at", type="string", format="date-time", example="2024-01-15T10:30:00.000000Z"),
- *     @OA\Property(property="updated_at", type="string", format="date-time", example="2024-01-15T10:30:00.000000Z")
+ *     @OA\Property(property="created_at", type="string", format="date-time", example="2025-01-15T10:30:00.000000Z"),
+ *     @OA\Property(property="updated_at", type="string", format="date-time", example="2025-01-15T10:30:00.000000Z")
  * )
  */
 class Event extends Model
