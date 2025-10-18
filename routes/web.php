@@ -3,6 +3,7 @@
 use App\Http\Controllers\WelcomeController;
 use App\Http\Controllers\EventController;
 use Illuminate\Support\Facades\Route;
+use Carbon\Carbon;
 
 // Test routes - remove after fixing API routes
 // Route::prefix('test/events')->group(function () {
