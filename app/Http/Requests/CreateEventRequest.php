@@ -168,14 +168,36 @@ class CreateEventRequest extends FormRequest
     }
 
     private function convertToUTC(string $dateTime, string $timezone): string
-    {
-        try {
-            return Carbon::parse($dateTime)
-                ->setTimezone($timezone)
-                ->setTimezone('UTC')
-                ->format('Y-m-d H:i:s');
-        } catch (\Exception $e) {
-            return $dateTime;
-        }
+{
+    try {
+        \Log::info('UTC Conversion Process', [
+            'input_datetime' => $dateTime,
+            'input_timezone' => $timezone,
+            'step_1_parse' => Carbon::parse($dateTime)->format('Y-m-d H:i:s P'),
+            'step_2_set_timezone' => Carbon::parse($dateTime)->setTimezone($timezone)->format('Y-m-d H:i:s P'),
+            'step_3_convert_utc' => Carbon::parse($dateTime)->setTimezone($timezone)->setTimezone('UTC')->format('Y-m-d H:i:s P')
+        ]);
+
+        $converted = Carbon::parse($dateTime)
+            ->setTimezone($timezone)
+            ->setTimezone('UTC')
+            ->format('Y-m-d H:i:s');
+
+        \Log::info('UTC Conversion Result', [
+            'input' => $dateTime . ' ' . $timezone,
+            'output' => $converted . ' UTC',
+            'expected_for_14:36_ist' => '2025-10-17 09:06:00 UTC'
+        ]);
+
+        return $converted;
+        
+    } catch (\Exception $e) {
+        \Log::error('UTC conversion failed', [
+            'datetime' => $dateTime,
+            'timezone' => $timezone,
+            'error' => $e->getMessage()
+        ]);
+        return $dateTime;
     }
+}
 }

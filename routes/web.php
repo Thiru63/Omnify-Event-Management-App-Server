@@ -180,54 +180,66 @@ Route::get('/verify-json-fix', function() {
     ];
 });
 
-Route::get('/test-timezone-flow', function () {
-    // Test the complete flow
-    $testCases = [
-        [
-            'input' => [
-                'start_time' => '2025-10-18 10:00:00',
-                'end_time' => '2025-10-18 17:30:00',
-                'timezone' => 'Asia/Kolkata'
-            ],
-            'description' => 'IST to UTC conversion'
-        ],
-        [
-            'input' => [
-                'start_time' => '2025-10-18 10:00:00',
-                'end_time' => '2025-10-18 17:30:00', 
-                'timezone' => 'America/New_York'
-            ],
-            'description' => 'EDT to UTC conversion'
-        ]
+Route::get('/debug-timezone-conversion', function () {
+    $testInput = [
+        'start_time' => '2025-10-17 14:36:00',
+        'timezone' => 'Asia/Kolkata'
     ];
+
+    // Step 1: Parse input time in IST
+    $inputTimeIST = Carbon::parse($testInput['start_time'])->setTimezone('Asia/Kolkata');
     
-    $results = [];
+    // Step 2: Convert to UTC (what should be stored)
+    $storedTimeUTC = $inputTimeIST->copy()->setTimezone('UTC');
     
-    foreach ($testCases as $test) {
-        $request = new \App\Http\Requests\CreateEventRequest();
-        $request->merge($test['input']);
-        
-        $validator = validator($request->all(), $request->rules());
-        
-        $results[] = [
-            'test_case' => $test['description'],
-            'input' => $test['input'],
-            'validation_passed' => !$validator->fails(),
-            'validation_errors' => $validator->errors()->all(),
-            'converted_times' => [
-                'start_time_utc' => $request->get('start_time'),
-                'end_time_utc' => $request->get('end_time'),
-            ],
-            'retrieval_example' => [
-                'asia_kolkata' => [
-                    'start' => \Carbon\Carbon::parse($request->get('start_time'))->setTimezone('Asia/Kolkata')->format('Y-m-d H:i:s P'),
-                    'end' => \Carbon\Carbon::parse($request->get('end_time'))->setTimezone('Asia/Kolkata')->format('Y-m-d H:i:s P'),
-                ]
-            ]
-        ];
+    // Step 3: Convert back to IST (what should be retrieved)
+    $retrievedTimeIST = $storedTimeUTC->copy()->setTimezone('Asia/Kolkata');
+
+    return response()->json([
+        'conversion_process' => [
+            'input_time_ist' => $inputTimeIST->format('Y-m-d H:i:s P'),
+            'should_store_as_utc' => $storedTimeUTC->format('Y-m-d H:i:s P'),
+            'should_retrieve_as_ist' => $retrievedTimeIST->format('Y-m-d H:i:s P'),
+        ],
+        'your_actual_result' => [
+            'input' => '2025-10-17 14:36:00 IST',
+            'expected_output' => '2025-10-17 14:36:00 IST', 
+            'actual_output' => '2025-10-17 20:06:00 IST',
+            'difference' => '+5 hours 30 minutes'
+        ],
+        'issue_diagnosis' => 'Double timezone conversion detected - converting IST→UTC→IST again instead of IST→UTC→IST'
+    ]);
+});
+
+Route::get('/debug-database-values', function () {
+    $event = \App\Models\Event::latest()->first();
+    
+    if (!$event) {
+        return response()->json(['error' => 'No events found']);
     }
-    
-    return response()->json($results);
+
+    return response()->json([
+        'database_values' => [
+            'start_time_raw' => $event->start_time,
+            'end_time_raw' => $event->end_time,
+            'start_time_type' => gettype($event->start_time),
+            'end_time_type' => gettype($event->end_time),
+        ],
+        'carbon_interpretation' => [
+            'start_time_as_carbon' => Carbon::parse($event->start_time)->format('Y-m-d H:i:s P'),
+            'end_time_as_carbon' => Carbon::parse($event->end_time)->format('Y-m-d H:i:s P'),
+        ],
+        'conversion_test' => [
+            'to_ist' => [
+                'start' => Carbon::parse($event->start_time)->setTimezone('Asia/Kolkata')->format('Y-m-d H:i:s P'),
+                'end' => Carbon::parse($event->end_time)->setTimezone('Asia/Kolkata')->format('Y-m-d H:i:s P'),
+            ],
+            'to_utc' => [
+                'start' => Carbon::parse($event->start_time)->setTimezone('UTC')->format('Y-m-d H:i:s P'),
+                'end' => Carbon::parse($event->end_time)->setTimezone('UTC')->format('Y-m-d H:i:s P'),
+            ]
+        ]
+    ]);
 });
 
 // Root endpoint - Welcome page

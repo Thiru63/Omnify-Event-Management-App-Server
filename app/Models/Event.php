@@ -49,29 +49,66 @@ class Event extends Model
 
     public function toTimezone(string $timezone): array
 {
-    // Direct conversion from Eloquent's Carbon instances
-    $startTime = $this->start_time->copy()->setTimezone($timezone);
-    $endTime = $this->end_time->copy()->setTimezone($timezone);
-    $createdAt = $this->created_at->copy()->setTimezone($timezone);
-    $updatedAt = $this->updated_at->copy()->setTimezone($timezone);
+    \Log::info('Timezone Conversion Debug', [
+        'event_id' => $this->id,
+        'stored_start_time' => $this->start_time,
+        'stored_end_time' => $this->end_time,
+        'requested_timezone' => $timezone
+    ]);
+
+    // Method 1: Direct conversion from stored UTC times
+    $startTimeUTC = Carbon::parse($this->start_time)->setTimezone('UTC');
+    $endTimeUTC = Carbon::parse($this->end_time)->setTimezone('UTC');
+    
+    $startTimeLocal = $startTimeUTC->copy()->setTimezone($timezone);
+    $endTimeLocal = $endTimeUTC->copy()->setTimezone($timezone);
+
+    // Method 2: Alternative approach - ensure we're starting from UTC
+    $startTimeAlt = Carbon::createFromFormat('Y-m-d H:i:s', $this->start_time, 'UTC')
+        ->setTimezone($timezone);
+    $endTimeAlt = Carbon::createFromFormat('Y-m-d H:i:s', $this->end_time, 'UTC')
+        ->setTimezone($timezone);
+
+    \Log::info('Timezone Conversion Results', [
+        'method_1_start' => $startTimeLocal->format('Y-m-d H:i:s P'),
+        'method_1_end' => $endTimeLocal->format('Y-m-d H:i:s P'),
+        'method_2_start' => $startTimeAlt->format('Y-m-d H:i:s P'),
+        'method_2_end' => $endTimeAlt->format('Y-m-d H:i:s P'),
+        'stored_times_are_utc' => $this->start_time === $startTimeUTC->format('Y-m-d H:i:s')
+    ]);
 
     return [
         'id' => $this->id,
         'name' => $this->name,
         'location' => $this->location,
-        'start_time' => $startTime->format('c'), // ISO 8601 with timezone
-        'end_time' => $endTime->format('c'),
-        'start_time_display' => $startTime->format('D, M j, Y g:i A'),
-        'end_time_display' => $endTime->format('D, M j, Y g:i A'),
-        'start_time_local' => $startTime->format('Y-m-d H:i:s'),
-        'end_time_local' => $endTime->format('Y-m-d H:i:s'),
+        
+        // Use method 2 for more explicit UTC handling
+        'start_time' => $startTimeAlt->format('c'),
+        'end_time' => $endTimeAlt->format('c'),
+        
+        'start_time_display' => $startTimeAlt->format('D, M j, Y g:i A'),
+        'end_time_display' => $endTimeAlt->format('D, M j, Y g:i A'),
+        
+        'start_time_local' => $startTimeAlt->format('Y-m-d H:i:s'),
+        'end_time_local' => $endTimeAlt->format('Y-m-d H:i:s'),
+        
         'max_capacity' => $this->max_capacity,
         'current_attendees' => $this->current_attendees,
         'available_capacity' => $this->max_capacity - $this->current_attendees,
-        'created_at' => $createdAt->format('c'),
-        'updated_at' => $updatedAt->format('c'),
+        
+        'created_at' => $this->created_at->setTimezone($timezone)->format('c'),
+        'updated_at' => $this->updated_at->setTimezone($timezone)->format('c'),
+        
         'timezone' => $timezone,
-        'timezone_offset' => $startTime->format('P'),
+        'timezone_offset' => $startTimeAlt->format('P'),
+        
+        // Debug info
+        '_debug' => [
+            'stored_start_utc' => $this->start_time,
+            'stored_end_utc' => $this->end_time,
+            'conversion_applied' => 'UTC → ' . $timezone,
+            'expected_input_time' => '2025-10-17 14:36:00 IST'
+        ]
     ];
 }
 
