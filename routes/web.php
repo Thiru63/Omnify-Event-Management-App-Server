@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\WelcomeController;
+use App\Http\Requests\CreateEventRequest;
 use App\Http\Controllers\EventController;
 use Illuminate\Support\Facades\Route;
 use Carbon\Carbon;
