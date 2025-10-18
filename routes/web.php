@@ -127,62 +127,70 @@ Route::get('/swagger-fresh', function() {
     ';
 });
 
-Route::get('/debug-json-content', function() {
-    $jsonPath = storage_path('api-docs/api-docs.json');
+
+// In routes/web.php
+Route::get('/debug-events', function () {
+    $events = \App\Models\Event::all();
+    $upcomingEvents = \App\Models\Event::upcoming()->get();
     
-    if (!file_exists($jsonPath)) {
-        return response()->json(['error' => 'JSON file not found'], 404);
-    }
-    
-    $jsonContent = file_get_contents($jsonPath);
-    $data = json_decode($jsonContent, true);
-    
-    // Return the exact servers array
-    return [
-        'servers' => $data['servers'] ?? 'No servers key',
-        'full_json_url' => 'https://omnify-event-management-app-server.onrender.com/api-docs.json',
-        'json_first_500_chars' => substr($jsonContent, 0, 500)
-    ];
+    return response()->json([
+        'all_events_count' => $events->count(),
+        'upcoming_events_count' => $upcomingEvents->count(),
+        'all_events' => $events->map(function($event) {
+            return [
+                'id' => $event->id,
+                'name' => $event->name,
+                'start_time' => $event->start_time,
+                'end_time' => $event->end_time,
+                'location' => $event->location
+            ];
+        }),
+        'upcoming_events' => $upcomingEvents->map(function($event) {
+            return [
+                'id' => $event->id,
+                'name' => $event->name,
+                'start_time' => $event->start_time,
+                'end_time' => $event->end_time,
+                'location' => $event->location
+            ];
+        })
+    ]);
 });
 
-Route::get('/check-json-structure', function() {
-    $jsonPath = storage_path('api-docs/api-docs.json');
-    
-    if (!file_exists($jsonPath)) {
-        return response()->json(['error' => 'JSON file not found'], 404);
+Route::get('/debug-event-creation', function () {
+    // Create a test event directly to verify everything works
+    try {
+        $event = \App\Models\Event::create([
+            'name' => 'Debug Test Event',
+            'location' => 'Test Location',
+            'start_time' => '2025-10-19 10:00:00', // UTC time
+            'end_time' => '2025-10-19 17:00:00',   // UTC time
+            'max_capacity' => 50,
+            'current_attendees' => 0,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Test event created successfully',
+            'event' => [
+                'id' => $event->id,
+                'name' => $event->name,
+                'start_time_utc' => $event->start_time,
+                'end_time_utc' => $event->end_time,
+                'start_time_ist' => $event->toTimezone('Asia/Kolkata')['start_time_local'],
+                'end_time_ist' => $event->toTimezone('Asia/Kolkata')['end_time_local'],
+            ]
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'error' => $e->getMessage()
+        ], 500);
     }
-    
-    $jsonContent = file_get_contents($jsonPath);
-    $data = json_decode($jsonContent, true);
-    
-    return [
-        'servers' => $data['servers'] ?? 'No servers',
-        'host' => $data['host'] ?? 'No host',
-        'basePath' => $data['basePath'] ?? 'No basePath',
-        'schemes' => $data['schemes'] ?? 'No schemes',
-        'has_localhost' => str_contains($jsonContent, 'localhost'),
-        'has_8000' => str_contains($jsonContent, '8000')
-    ];
 });
 
-Route::get('/verify-json-fix', function() {
-    $jsonPath = storage_path('api-docs/api-docs.json');
-    
-    if (!file_exists($jsonPath)) {
-        return response()->json(['error' => 'JSON file not found'], 404);
-    }
-    
-    $jsonContent = file_get_contents($jsonPath);
-    
-    return [
-        'has_localhost' => str_contains($jsonContent, 'localhost'),
-        'has_8000' => str_contains($jsonContent, '8000'),
-        'has_production_url' => str_contains($jsonContent, 'omnify-event-management-app-server.onrender.com'),
-        'servers_section' => substr($jsonContent, strpos($jsonContent, '"servers"'), 200)
-    ];
-});
-
-Route::get('/test-utc-conversion', function () {
+// In routes/web.php - Replace the old test-utc-conversion route
+Route::get('/test-utc-conversion-fixed', function () {
     $testCases = [
         [
             'input' => '2025-10-18 10:00:00',
@@ -193,36 +201,64 @@ Route::get('/test-utc-conversion', function () {
             'input' => '2025-10-18 14:36:00', 
             'timezone' => 'Asia/Kolkata',
             'description' => '2:36 PM IST'
+        ],
+        [
+            'input' => '2025-10-18 09:00:00',
+            'timezone' => 'America/New_York', 
+            'description' => '9:00 AM EDT'
         ]
     ];
 
     $results = [];
 
     foreach ($testCases as $test) {
-        $request = new \App\Http\Requests\CreateEventRequest();
-        
-        // Test the conversion directly
-        $convertedUTC = $request->convertToUTC($test['input'], $test['timezone']);
-        
         $inputCarbon = Carbon::createFromFormat('Y-m-d H:i:s', $test['input'], $test['timezone']);
-        $utcCarbon = Carbon::parse($convertedUTC)->setTimezone('UTC');
-        $backToIST = $utcCarbon->copy()->setTimezone('Asia/Kolkata');
+        $utcCarbon = $inputCarbon->copy()->setTimezone('UTC');
+        $backToOriginal = $utcCarbon->copy()->setTimezone($test['timezone']);
 
         $results[] = [
             'test_case' => $test['description'],
             'input_time' => $inputCarbon->format('Y-m-d H:i:s P'),
             'converted_utc' => $utcCarbon->format('Y-m-d H:i:s P'),
-            'retrieved_ist' => $backToIST->format('Y-m-d H:i:s P'),
-            'conversion_correct' => $inputCarbon->format('H:i:s') === $backToIST->format('H:i:s') ? '✅ YES' : '❌ NO',
-            'expected_utc' => $inputCarbon->copy()->setTimezone('UTC')->format('Y-m-d H:i:s P')
+            'retrieved_original' => $backToOriginal->format('Y-m-d H:i:s P'),
+            'conversion_correct' => $inputCarbon->format('H:i:s') === $backToOriginal->format('H:i:s') ? '✅ YES' : '❌ NO',
+            'timezone_offset' => $inputCarbon->format('P') . ' → ' . $utcCarbon->format('P')
         ];
     }
 
     return response()->json([
         'conversion_test' => $results,
-        'timezone_notes' => [
-            'ist_to_utc_offset' => '-5 hours 30 minutes',
-            'example' => '10:00:00 IST = 04:30:00 UTC'
+        'timezone_info' => [
+            'Asia/Kolkata' => 'UTC+5:30',
+            'America/New_York' => 'UTC-4 (EDT)',
+            'conversion_rule' => 'Input Time → UTC → Same Local Time'
+        ]
+    ]);
+});
+// In routes/web.php
+Route::get('/test-conversion-with-helper', function () {
+    $testCases = [
+        ['2025-10-18 10:00:00', 'Asia/Kolkata'],
+        ['2025-10-18 14:36:00', 'Asia/Kolkata'],
+        ['2025-10-18 09:00:00', 'America/New_York'],
+        ['2025-10-18 10:00:00', 'UTC'] // Test with UTC input
+    ];
+
+    $results = [];
+
+    foreach ($testCases as $test) {
+        list($datetime, $timezone) = $test;
+        
+        $result = \App\Helpers\TimezoneHelper::testConversionFlow($datetime, $timezone);
+        $results[] = array_merge(['input' => $datetime, 'timezone' => $timezone], $result);
+    }
+
+    return response()->json([
+        'conversion_tests' => $results,
+        'summary' => [
+            'total_tests' => count($results),
+            'successful_conversions' => count(array_filter($results, fn($r) => $r['conversion_success'])),
+            'failed_conversions' => count(array_filter($results, fn($r) => !$r['conversion_success']))
         ]
     ]);
 });

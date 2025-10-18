@@ -212,4 +212,41 @@ class CreateEventRequest extends FormRequest
         }
     }
 }
+public static function convertToUTC2(string $dateTime, string $timezone): string
+    {
+        try {
+            return Carbon::createFromFormat('Y-m-d H:i:s', $dateTime, $timezone)
+                ->setTimezone('UTC')
+                ->format('Y-m-d H:i:s');
+        } catch (\Exception $e) {
+            // Fallback method
+            try {
+                return Carbon::parse($dateTime)
+                    ->setTimezone($timezone)
+                    ->setTimezone('UTC')
+                    ->format('Y-m-d H:i:s');
+            } catch (\Exception $e2) {
+                return $dateTime;
+            }
+        }
+    }
+
+    /**
+     * Test the complete conversion flow
+     */
+    public static function testConversionFlow(string $dateTime, string $timezone): array
+    {
+        $inputCarbon = Carbon::createFromFormat('Y-m-d H:i:s', $dateTime, $timezone);
+        $utcTime = self::convertToUTC($dateTime, $timezone);
+        $utcCarbon = Carbon::parse($utcTime)->setTimezone('UTC');
+        $backToOriginal = $utcCarbon->copy()->setTimezone($timezone);
+
+        return [
+            'input' => $inputCarbon->format('Y-m-d H:i:s P'),
+            'stored_utc' => $utcCarbon->format('Y-m-d H:i:s P'),
+            'retrieved' => $backToOriginal->format('Y-m-d H:i:s P'),
+            'conversion_success' => $inputCarbon->format('H:i:s') === $backToOriginal->format('H:i:s'),
+            'time_difference' => $inputCarbon->diffForHumans($backToOriginal)
+        ];
+    }
 }
