@@ -249,7 +249,7 @@ Route::get('/test-conversion-with-helper', function () {
     foreach ($testCases as $test) {
         list($datetime, $timezone) = $test;
         
-        $result = \App\Helpers\TimezoneHelper::testConversionFlow($datetime, $timezone);
+        $result = \App\Http\Requests\CreateEventRequest::testConversionFlow($datetime, $timezone);
         $results[] = array_merge(['input' => $datetime, 'timezone' => $timezone], $result);
     }
 

@@ -237,7 +237,7 @@ public static function convertToUTC2(string $dateTime, string $timezone): string
     public static function testConversionFlow(string $dateTime, string $timezone): array
     {
         $inputCarbon = Carbon::createFromFormat('Y-m-d H:i:s', $dateTime, $timezone);
-        $utcTime = self::convertToUTC($dateTime, $timezone);
+        $utcTime = self::convertToUTC2($dateTime, $timezone);
         $utcCarbon = Carbon::parse($utcTime)->setTimezone('UTC');
         $backToOriginal = $utcCarbon->copy()->setTimezone($timezone);
 
