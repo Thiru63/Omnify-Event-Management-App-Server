@@ -170,23 +170,26 @@ class CreateEventRequest extends FormRequest
     private function convertToUTC(string $dateTime, string $timezone): string
 {
     try {
-        \Log::info('UTC Conversion Process', [
-            'input_datetime' => $dateTime,
-            'input_timezone' => $timezone,
-            'step_1_parse' => Carbon::parse($dateTime)->format('Y-m-d H:i:s P'),
-            'step_2_set_timezone' => Carbon::parse($dateTime)->setTimezone($timezone)->format('Y-m-d H:i:s P'),
-            'step_3_convert_utc' => Carbon::parse($dateTime)->setTimezone($timezone)->setTimezone('UTC')->format('Y-m-d H:i:s P')
+        \Log::info('UTC Conversion - START', [
+            'input' => $dateTime,
+            'timezone' => $timezone
         ]);
 
-        $converted = Carbon::parse($dateTime)
-            ->setTimezone($timezone)
-            ->setTimezone('UTC')
-            ->format('Y-m-d H:i:s');
+        // Method 1: Explicit timezone conversion
+        $carbon = Carbon::createFromFormat('Y-m-d H:i:s', $dateTime, $timezone);
+        
+        \Log::info('UTC Conversion - After Create', [
+            'in_input_timezone' => $carbon->format('Y-m-d H:i:s P')
+        ]);
 
-        \Log::info('UTC Conversion Result', [
+        // Convert to UTC
+        $carbon->setTimezone('UTC');
+        $converted = $carbon->format('Y-m-d H:i:s');
+
+        \Log::info('UTC Conversion - FINAL', [
             'input' => $dateTime . ' ' . $timezone,
-            'output' => $converted . ' UTC',
-            'expected_for_14:36_ist' => '2025-10-17 09:06:00 UTC'
+            'output_utc' => $converted,
+            'conversion_applied' => $timezone . ' → UTC'
         ]);
 
         return $converted;
@@ -197,7 +200,16 @@ class CreateEventRequest extends FormRequest
             'timezone' => $timezone,
             'error' => $e->getMessage()
         ]);
-        return $dateTime;
+        
+        // Fallback: try simple parsing
+        try {
+            return Carbon::parse($dateTime)
+                ->setTimezone($timezone)
+                ->setTimezone('UTC')
+                ->format('Y-m-d H:i:s');
+        } catch (\Exception $e2) {
+            return $dateTime;
+        }
     }
 }
 }

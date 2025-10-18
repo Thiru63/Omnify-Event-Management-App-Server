@@ -181,64 +181,47 @@ Route::get('/verify-json-fix', function() {
     ];
 });
 
-Route::get('/debug-timezone-conversion', function () {
-    $testInput = [
-        'start_time' => '2025-10-17 14:36:00',
-        'timezone' => 'Asia/Kolkata'
+Route::get('/test-utc-conversion', function () {
+    $testCases = [
+        [
+            'input' => '2025-10-18 10:00:00',
+            'timezone' => 'Asia/Kolkata',
+            'description' => '10:00 AM IST'
+        ],
+        [
+            'input' => '2025-10-18 14:36:00', 
+            'timezone' => 'Asia/Kolkata',
+            'description' => '2:36 PM IST'
+        ]
     ];
 
-    // Step 1: Parse input time in IST
-    $inputTimeIST = Carbon::parse($testInput['start_time'])->setTimezone('Asia/Kolkata');
-    
-    // Step 2: Convert to UTC (what should be stored)
-    $storedTimeUTC = $inputTimeIST->copy()->setTimezone('UTC');
-    
-    // Step 3: Convert back to IST (what should be retrieved)
-    $retrievedTimeIST = $storedTimeUTC->copy()->setTimezone('Asia/Kolkata');
+    $results = [];
 
-    return response()->json([
-        'conversion_process' => [
-            'input_time_ist' => $inputTimeIST->format('Y-m-d H:i:s P'),
-            'should_store_as_utc' => $storedTimeUTC->format('Y-m-d H:i:s P'),
-            'should_retrieve_as_ist' => $retrievedTimeIST->format('Y-m-d H:i:s P'),
-        ],
-        'your_actual_result' => [
-            'input' => '2025-10-17 14:36:00 IST',
-            'expected_output' => '2025-10-17 14:36:00 IST', 
-            'actual_output' => '2025-10-17 20:06:00 IST',
-            'difference' => '+5 hours 30 minutes'
-        ],
-        'issue_diagnosis' => 'Double timezone conversion detected - converting IST→UTC→IST again instead of IST→UTC→IST'
-    ]);
-});
+    foreach ($testCases as $test) {
+        $request = new \App\Http\Requests\CreateEventRequest();
+        
+        // Test the conversion directly
+        $convertedUTC = $request->convertToUTC($test['input'], $test['timezone']);
+        
+        $inputCarbon = Carbon::createFromFormat('Y-m-d H:i:s', $test['input'], $test['timezone']);
+        $utcCarbon = Carbon::parse($convertedUTC)->setTimezone('UTC');
+        $backToIST = $utcCarbon->copy()->setTimezone('Asia/Kolkata');
 
-Route::get('/debug-database-values', function () {
-    $event = \App\Models\Event::latest()->first();
-    
-    if (!$event) {
-        return response()->json(['error' => 'No events found']);
+        $results[] = [
+            'test_case' => $test['description'],
+            'input_time' => $inputCarbon->format('Y-m-d H:i:s P'),
+            'converted_utc' => $utcCarbon->format('Y-m-d H:i:s P'),
+            'retrieved_ist' => $backToIST->format('Y-m-d H:i:s P'),
+            'conversion_correct' => $inputCarbon->format('H:i:s') === $backToIST->format('H:i:s') ? '✅ YES' : '❌ NO',
+            'expected_utc' => $inputCarbon->copy()->setTimezone('UTC')->format('Y-m-d H:i:s P')
+        ];
     }
 
     return response()->json([
-        'database_values' => [
-            'start_time_raw' => $event->start_time,
-            'end_time_raw' => $event->end_time,
-            'start_time_type' => gettype($event->start_time),
-            'end_time_type' => gettype($event->end_time),
-        ],
-        'carbon_interpretation' => [
-            'start_time_as_carbon' => Carbon::parse($event->start_time)->format('Y-m-d H:i:s P'),
-            'end_time_as_carbon' => Carbon::parse($event->end_time)->format('Y-m-d H:i:s P'),
-        ],
-        'conversion_test' => [
-            'to_ist' => [
-                'start' => Carbon::parse($event->start_time)->setTimezone('Asia/Kolkata')->format('Y-m-d H:i:s P'),
-                'end' => Carbon::parse($event->end_time)->setTimezone('Asia/Kolkata')->format('Y-m-d H:i:s P'),
-            ],
-            'to_utc' => [
-                'start' => Carbon::parse($event->start_time)->setTimezone('UTC')->format('Y-m-d H:i:s P'),
-                'end' => Carbon::parse($event->end_time)->setTimezone('UTC')->format('Y-m-d H:i:s P'),
-            ]
+        'conversion_test' => $results,
+        'timezone_notes' => [
+            'ist_to_utc_offset' => '-5 hours 30 minutes',
+            'example' => '10:00:00 IST = 04:30:00 UTC'
         ]
     ]);
 });
