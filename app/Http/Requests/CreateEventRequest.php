@@ -170,16 +170,17 @@ class CreateEventRequest extends FormRequest
     private function convertToUTC(string $dateTime, string $timezone): string
 {
     try {
-        \Log::info('UTC Conversion - START', [
-            'input' => $dateTime,
-            'timezone' => $timezone
+        \Log::info('UTC Conversion - INPUT', [
+            'input_datetime' => $dateTime,
+            'input_timezone' => $timezone
         ]);
 
-        // Method 1: Explicit timezone conversion
+        // METHOD 1: Use createFromFormat with explicit timezone (RECOMMENDED)
         $carbon = Carbon::createFromFormat('Y-m-d H:i:s', $dateTime, $timezone);
         
-        \Log::info('UTC Conversion - After Create', [
-            'in_input_timezone' => $carbon->format('Y-m-d H:i:s P')
+        \Log::info('UTC Conversion - AFTER CREATE', [
+            'in_input_timezone' => $carbon->format('Y-m-d H:i:s P'),
+            'timezone_set' => $carbon->timezoneName
         ]);
 
         // Convert to UTC
@@ -189,7 +190,9 @@ class CreateEventRequest extends FormRequest
         \Log::info('UTC Conversion - FINAL', [
             'input' => $dateTime . ' ' . $timezone,
             'output_utc' => $converted,
-            'conversion_applied' => $timezone . ' → UTC'
+            'expected_for_10:00_ist' => '2025-12-20 04:30:00',
+            'expected_for_17:00_ist' => '2025-12-20 11:30:00',
+            'conversion_correct' => $converted === '2025-12-20 04:30:00' ? 'YES' : 'NO - CHECK LOGIC'
         ]);
 
         return $converted;
@@ -201,15 +204,7 @@ class CreateEventRequest extends FormRequest
             'error' => $e->getMessage()
         ]);
         
-        // Fallback: try simple parsing
-        try {
-            return Carbon::parse($dateTime)
-                ->setTimezone($timezone)
-                ->setTimezone('UTC')
-                ->format('Y-m-d H:i:s');
-        } catch (\Exception $e2) {
-            return $dateTime;
-        }
+        return $dateTime;
     }
 }
 public static function convertToUTC2(string $dateTime, string $timezone): string

@@ -129,136 +129,75 @@ Route::get('/swagger-fresh', function() {
 
 
 // In routes/web.php
-Route::get('/debug-events', function () {
-    $events = \App\Models\Event::all();
-    $upcomingEvents = \App\Models\Event::upcoming()->get();
-    
-    return response()->json([
-        'all_events_count' => $events->count(),
-        'upcoming_events_count' => $upcomingEvents->count(),
-        'all_events' => $events->map(function($event) {
-            return [
-                'id' => $event->id,
-                'name' => $event->name,
-                'start_time' => $event->start_time,
-                'end_time' => $event->end_time,
-                'location' => $event->location
-            ];
-        }),
-        'upcoming_events' => $upcomingEvents->map(function($event) {
-            return [
-                'id' => $event->id,
-                'name' => $event->name,
-                'start_time' => $event->start_time,
-                'end_time' => $event->end_time,
-                'location' => $event->location
-            ];
-        })
-    ]);
-});
-
-Route::get('/debug-event-creation', function () {
-    // Create a test event directly to verify everything works
-    try {
-        $event = \App\Models\Event::create([
-            'name' => 'Debug Test Event',
-            'location' => 'Test Location',
-            'start_time' => '2025-10-19 10:00:00', // UTC time
-            'end_time' => '2025-10-19 17:00:00',   // UTC time
-            'max_capacity' => 50,
-            'current_attendees' => 0,
-        ]);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Test event created successfully',
-            'event' => [
-                'id' => $event->id,
-                'name' => $event->name,
-                'start_time_utc' => $event->start_time,
-                'end_time_utc' => $event->end_time,
-                'start_time_ist' => $event->toTimezone('Asia/Kolkata')['start_time_local'],
-                'end_time_ist' => $event->toTimezone('Asia/Kolkata')['end_time_local'],
-            ]
-        ]);
-    } catch (\Exception $e) {
-        return response()->json([
-            'success' => false,
-            'error' => $e->getMessage()
-        ], 500);
-    }
-});
-
-// In routes/web.php - Replace the old test-utc-conversion route
-Route::get('/test-utc-conversion-fixed', function () {
-    $testCases = [
-        [
-            'input' => '2025-10-18 10:00:00',
-            'timezone' => 'Asia/Kolkata',
-            'description' => '10:00 AM IST'
-        ],
-        [
-            'input' => '2025-10-18 14:36:00', 
-            'timezone' => 'Asia/Kolkata',
-            'description' => '2:36 PM IST'
-        ],
-        [
-            'input' => '2025-10-18 09:00:00',
-            'timezone' => 'America/New_York', 
-            'description' => '9:00 AM EDT'
-        ]
+Route::get('/debug-exact-conversion', function () {
+    // Test with your exact API input
+    $testInput = [
+        'start_time' => '2025-12-20 10:00:00',
+        'end_time' => '2025-12-20 17:00:00', 
+        'timezone' => 'Asia/Kolkata'
     ];
 
     $results = [];
 
-    foreach ($testCases as $test) {
-        $inputCarbon = Carbon::createFromFormat('Y-m-d H:i:s', $test['input'], $test['timezone']);
-        $utcCarbon = $inputCarbon->copy()->setTimezone('UTC');
-        $backToOriginal = $utcCarbon->copy()->setTimezone($test['timezone']);
+    foreach (['start_time', 'end_time'] as $field) {
+        $input = $testInput[$field];
+        $timezone = $testInput['timezone'];
 
-        $results[] = [
-            'test_case' => $test['description'],
-            'input_time' => $inputCarbon->format('Y-m-d H:i:s P'),
-            'converted_utc' => $utcCarbon->format('Y-m-d H:i:s P'),
-            'retrieved_original' => $backToOriginal->format('Y-m-d H:i:s P'),
-            'conversion_correct' => $inputCarbon->format('H:i:s') === $backToOriginal->format('H:i:s') ? '✅ YES' : '❌ NO',
-            'timezone_offset' => $inputCarbon->format('P') . ' → ' . $utcCarbon->format('P')
+        // Method 1: Current logic (what you're using)
+        $method1 = Carbon::createFromFormat('Y-m-d H:i:s', $input, $timezone)
+            ->setTimezone('UTC')
+            ->format('Y-m-d H:i:s');
+
+        // Method 2: Alternative approach
+        $method2 = Carbon::parse($input)
+            ->setTimezone($timezone)
+            ->setTimezone('UTC')
+            ->format('Y-m-d H:i:s');
+
+        // Method 3: Manual calculation (for verification)
+        $inputCarbon = Carbon::createFromFormat('Y-m-d H:i:s', $input, $timezone);
+        $manualUTC = $inputCarbon->copy()->setTimezone('UTC');
+
+        $results[$field] = [
+            'input' => $input . ' ' . $timezone,
+            'method_1_result' => $method1,
+            'method_2_result' => $method2, 
+            'manual_calculation' => $manualUTC->format('Y-m-d H:i:s P'),
+            'expected_utc' => $inputCarbon->copy()->subHours(5)->subMinutes(30)->format('Y-m-d H:i:s') . ' UTC',
+            'all_methods_match' => $method1 === $method2 && $method1 === $manualUTC->format('Y-m-d H:i:s')
         ];
     }
 
     return response()->json([
         'conversion_test' => $results,
-        'timezone_info' => [
-            'Asia/Kolkata' => 'UTC+5:30',
-            'America/New_York' => 'UTC-4 (EDT)',
-            'conversion_rule' => 'Input Time → UTC → Same Local Time'
+        'expected_behavior' => [
+            'input_10:00_ist' => '2025-12-20 10:00:00 Asia/Kolkata',
+            'should_store_as' => '2025-12-20 04:30:00 UTC',
+            'input_17:00_ist' => '2025-12-20 17:00:00 Asia/Kolkata', 
+            'should_store_as' => '2025-12-20 11:30:00 UTC'
+        ],
+        'your_actual_storage' => [
+            'start_time' => '2025-12-19 23:00:00 UTC',
+            'end_time' => '2025-12-20 06:00:00 UTC'
         ]
     ]);
 });
 // In routes/web.php
-Route::get('/test-conversion-with-helper', function () {
-    $testCases = [
-        ['2025-10-18 10:00:00', 'Asia/Kolkata'],
-        ['2025-10-18 14:36:00', 'Asia/Kolkata'],
-        ['2025-10-18 09:00:00', 'America/New_York'],
-        ['2025-10-18 10:00:00', 'UTC'] // Test with UTC input
-    ];
-
-    $results = [];
-
-    foreach ($testCases as $test) {
-        list($datetime, $timezone) = $test;
-        
-        $result = \App\Http\Requests\CreateEventRequest::testConversionFlow($datetime, $timezone);
-        $results[] = array_merge(['input' => $datetime, 'timezone' => $timezone], $result);
-    }
-
+Route::get('/debug-server-timezone', function () {
     return response()->json([
-        'conversion_tests' => $results,
-        'summary' => [
-            'total_tests' => count($results),
-            'successful_conversions' => count(array_filter($results, fn($r) => $r['conversion_success'])),
-            'failed_conversions' => count(array_filter($results, fn($r) => !$r['conversion_success']))
+        'server_configuration' => [
+            'app_timezone' => config('app.timezone'),
+            'db_timezone' => config('database.timezone', 'not set'),
+            'php_timezone' => date_default_timezone_get(),
+            'current_server_time' => now()->format('Y-m-d H:i:s P'),
+            'current_utc_time' => now()->setTimezone('UTC')->format('Y-m-d H:i:s P'),
+            'current_ist_time' => now()->setTimezone('Asia/Kolkata')->format('Y-m-d H:i:s P')
+        ],
+        'carbon_test' => [
+            'test_input' => '2025-12-20 10:00:00',
+            'parsed_default' => Carbon::parse('2025-12-20 10:00:00')->format('Y-m-d H:i:s P'),
+            'parsed_with_ist' => Carbon::parse('2025-12-20 10:00:00')->setTimezone('Asia/Kolkata')->format('Y-m-d H:i:s P'),
+            'created_with_ist' => Carbon::createFromFormat('Y-m-d H:i:s', '2025-12-20 10:00:00', 'Asia/Kolkata')->format('Y-m-d H:i:s P')
         ]
     ]);
 });
