@@ -170,29 +170,27 @@ class CreateEventRequest extends FormRequest
     private function convertToUTC(string $dateTime, string $timezone): string
 {
     try {
-        \Log::info('UTC Conversion - INPUT', [
-            'input_datetime' => $dateTime,
-            'input_timezone' => $timezone
+        \Log::info('UTC Conversion - Using Method 1', [
+            'input' => $dateTime,
+            'timezone' => $timezone
         ]);
 
-        // METHOD 1: Use createFromFormat with explicit timezone (RECOMMENDED)
+        // USE METHOD 1 (CORRECT): createFromFormat with explicit timezone
         $carbon = Carbon::createFromFormat('Y-m-d H:i:s', $dateTime, $timezone);
         
-        \Log::info('UTC Conversion - AFTER CREATE', [
+        \Log::info('UTC Conversion - After CreateFromFormat', [
             'in_input_timezone' => $carbon->format('Y-m-d H:i:s P'),
-            'timezone_set' => $carbon->timezoneName
+            'timezone_confirmed' => $carbon->timezoneName
         ]);
 
         // Convert to UTC
         $carbon->setTimezone('UTC');
         $converted = $carbon->format('Y-m-d H:i:s');
 
-        \Log::info('UTC Conversion - FINAL', [
+        \Log::info('UTC Conversion - Final Result', [
             'input' => $dateTime . ' ' . $timezone,
             'output_utc' => $converted,
-            'expected_for_10:00_ist' => '2025-12-20 04:30:00',
-            'expected_for_17:00_ist' => '2025-12-20 11:30:00',
-            'conversion_correct' => $converted === '2025-12-20 04:30:00' ? 'YES' : 'NO - CHECK LOGIC'
+            'conversion_method' => 'createFromFormat with explicit timezone'
         ]);
 
         return $converted;
