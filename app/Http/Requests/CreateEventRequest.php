@@ -56,55 +56,18 @@ class CreateEventRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
-       if ($this->has('start_time') && !empty($this->start_time)) {
-
-
-
+        // REMOVE UTC conversion from here - NO CONVERSION IN prepareForValidation
+        // Just do basic parsing if needed, but no timezone conversion
+        if ($this->has('start_time') && !empty($this->start_time)) {
             $this->merge([
-
-
-                'start_time' => $this->convertToUTC(
-
-
-                    $this->start_time, 
-
-
-                    $this->input('timezone', 'UTC')
-
-
-                ),
-
-
+                'start_time' => Carbon::parse($this->start_time)->format('Y-m-d H:i:s'),
             ]);
-
-
         }
 
-
-
-
-
         if ($this->has('end_time') && !empty($this->end_time)) {
-
-
             $this->merge([
-
-
-                'end_time' => $this->convertToUTC(
-
-
-                    $this->end_time,
-
-
-                    $this->input('timezone', 'UTC')
-
-
-                ),
-
-
+                'end_time' => Carbon::parse($this->end_time)->format('Y-m-d H:i:s'),
             ]);
-
-
         }
     }
 
@@ -153,93 +116,63 @@ class CreateEventRequest extends FormRequest
     }
 
     /**
-     * Convert to UTC after validation passes
+     * Convert to UTC after validation passes - SINGLE CONVERSION POINT
      */
     public function getValidatedData(): array
     {
         $validated = parent::validated();
         $timezone = $validated['timezone'];
 
-        // Convert times to UTC for storage
+        \Log::info('Single UTC Conversion - Starting', [
+            'original_start' => $validated['start_time'],
+            'original_end' => $validated['end_time'],
+            'timezone' => $timezone
+        ]);
+
+        // Convert times to UTC for storage - ONLY ONCE
         $validated['start_time'] = $this->convertToUTC($validated['start_time'], $timezone);
         $validated['end_time'] = $this->convertToUTC($validated['end_time'], $timezone);
+
+        \Log::info('Single UTC Conversion - Completed', [
+            'converted_start' => $validated['start_time'],
+            'converted_end' => $validated['end_time']
+        ]);
 
         return $validated;
     }
 
     private function convertToUTC(string $dateTime, string $timezone): string
-{
-    try {
-        \Log::info('UTC Conversion - Using Method 1', [
-            'input' => $dateTime,
-            'timezone' => $timezone
-        ]);
-
-        // USE METHOD 1 (CORRECT): createFromFormat with explicit timezone
-        $carbon = Carbon::createFromFormat('Y-m-d H:i:s', $dateTime, $timezone);
-        
-        \Log::info('UTC Conversion - After CreateFromFormat', [
-            'in_input_timezone' => $carbon->format('Y-m-d H:i:s P'),
-            'timezone_confirmed' => $carbon->timezoneName
-        ]);
-
-        // Convert to UTC
-        $carbon->setTimezone('UTC');
-        $converted = $carbon->format('Y-m-d H:i:s');
-
-        \Log::info('UTC Conversion - Final Result', [
-            'input' => $dateTime . ' ' . $timezone,
-            'output_utc' => $converted,
-            'conversion_method' => 'createFromFormat with explicit timezone'
-        ]);
-
-        return $converted;
-        
-    } catch (\Exception $e) {
-        \Log::error('UTC conversion failed', [
-            'datetime' => $dateTime,
-            'timezone' => $timezone,
-            'error' => $e->getMessage()
-        ]);
-        
-        return $dateTime;
-    }
-}
-public static function convertToUTC2(string $dateTime, string $timezone): string
     {
         try {
-            return Carbon::createFromFormat('Y-m-d H:i:s', $dateTime, $timezone)
-                ->setTimezone('UTC')
-                ->format('Y-m-d H:i:s');
+            \Log::info('UTC Conversion - Using createFromFormat', [
+                'input' => $dateTime,
+                'timezone' => $timezone
+            ]);
+
+            // USE createFromFormat with explicit timezone
+            $carbon = Carbon::createFromFormat('Y-m-d H:i:s', $dateTime, $timezone);
+            
+            $converted = $carbon->setTimezone('UTC')->format('Y-m-d H:i:s');
+
+            \Log::info('UTC Conversion - Result', [
+                'input' => $dateTime . ' ' . $timezone,
+                'output' => $converted . ' UTC',
+                'method' => 'createFromFormat'
+            ]);
+
+            return $converted;
+            
         } catch (\Exception $e) {
-            // Fallback method
-            try {
-                return Carbon::parse($dateTime)
-                    ->setTimezone($timezone)
-                    ->setTimezone('UTC')
-                    ->format('Y-m-d H:i:s');
-            } catch (\Exception $e2) {
-                return $dateTime;
-            }
+            \Log::error('UTC conversion failed', [
+                'datetime' => $dateTime,
+                'timezone' => $timezone,
+                'error' => $e->getMessage()
+            ]);
+            
+            return $dateTime;
         }
     }
 
-    /**
-     * Test the complete conversion flow
-     */
-    public static function testConversionFlow(string $dateTime, string $timezone): array
-    {
-        $inputCarbon = Carbon::createFromFormat('Y-m-d H:i:s', $dateTime, $timezone);
-        $utcTime = self::convertToUTC2($dateTime, $timezone);
-        $utcCarbon = Carbon::parse($utcTime)->setTimezone('UTC');
-        $backToOriginal = $utcCarbon->copy()->setTimezone($timezone);
-
-        return [
-            'input' => $inputCarbon->format('Y-m-d H:i:s P'),
-            'stored_utc' => $utcCarbon->format('Y-m-d H:i:s P'),
-            'retrieved' => $backToOriginal->format('Y-m-d H:i:s P'),
-            'conversion_success' => $inputCarbon->format('H:i:s') === $backToOriginal->format('H:i:s'),
-            'time_difference' => $inputCarbon->diffForHumans($backToOriginal)
-        ];
-    }
+    // Remove these extra methods - they're not needed
+    // public static function convertToUTC2() and public static function testConversionFlow()
 }
