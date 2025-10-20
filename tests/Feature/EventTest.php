@@ -49,7 +49,8 @@ class EventTest extends TestCase
             'location' => 'New Delhi',
             'start_time' => Carbon::now()->addDays(10)->format('Y-m-d H:i:s'),
             'end_time' => Carbon::now()->addDays(10)->addHours(8)->format('Y-m-d H:i:s'),
-            'max_capacity' => 200
+            'max_capacity' => 200,
+            'timezone' => 'Asia/Kolkata' // ADDED: Required timezone field
         ];
 
         $response = $this->postJson('/api/events', $eventData);
@@ -67,6 +68,7 @@ class EventTest extends TestCase
             'current_attendees' => 0
         ]);
     }
+
 
     /**
      * Test sorting events by different fields
@@ -247,14 +249,15 @@ class EventTest extends TestCase
     /*
      * Test event creation validation - past date
      */
-    public function test_cannot_create_event_with_past_start_time(): void
+     public function test_cannot_create_event_with_past_start_time(): void
     {
         $eventData = [
             'name' => 'Past Event',
             'location' => 'Mumbai',
-            'start_time' => '2020-01-01 10:00:00',
-            'end_time' => '2020-01-01 18:00:00',
-            'max_capacity' => 100
+            'start_time' => Carbon::now()->subDays(1)->format('Y-m-d H:i:s'), // Past date
+            'end_time' => Carbon::now()->addDays(1)->format('Y-m-d H:i:s'),
+            'max_capacity' => 100,
+            'timezone' => 'Asia/Kolkata' // ADDED: Required timezone field
         ];
 
         $response = $this->postJson('/api/events', $eventData);
@@ -263,7 +266,7 @@ class EventTest extends TestCase
                 ->assertJsonValidationErrors(['start_time']);
     }
 
-    /*
+    /**
      * Test event creation validation - end time before start time
      */
     public function test_cannot_create_event_with_end_time_before_start_time(): void
@@ -273,7 +276,8 @@ class EventTest extends TestCase
             'location' => 'Chennai',
             'start_time' => Carbon::now()->addDays(10)->format('Y-m-d H:i:s'),
             'end_time' => Carbon::now()->addDays(5)->format('Y-m-d H:i:s'), // End before start
-            'max_capacity' => 100
+            'max_capacity' => 100,
+            'timezone' => 'Asia/Kolkata' // ADDED: Required timezone field
         ];
 
         $response = $this->postJson('/api/events', $eventData);
@@ -281,6 +285,7 @@ class EventTest extends TestCase
         $response->assertStatus(422)
                 ->assertJsonValidationErrors(['end_time']);
     }
+
 
     /*
      * Test event creation validation - zero capacity
@@ -304,16 +309,36 @@ class EventTest extends TestCase
     /*
      * Test event creation validation - missing required fields
      */
-    public function test_cannot_create_event_with_missing_required_fields(): void
+     public function test_cannot_create_event_with_missing_required_fields(): void
     {
         $eventData = [
             'name' => 'Incomplete Event'
-            // Missing other required fields
+            // Missing other required fields including timezone
         ];
 
         $response = $this->postJson('/api/events', $eventData);
 
         $response->assertStatus(422)
-                ->assertJsonValidationErrors(['location', 'start_time', 'end_time', 'max_capacity']);
+                ->assertJsonValidationErrors(['location', 'start_time', 'end_time', 'max_capacity', 'timezone']);
     }
+
+    /**
+ * Test event creation validation - invalid timezone
+ */
+public function test_cannot_create_event_with_invalid_timezone(): void
+{
+    $eventData = [
+        'name' => 'Invalid Timezone Event',
+        'location' => 'Mumbai',
+        'start_time' => Carbon::now()->addDays(10)->format('Y-m-d H:i:s'),
+        'end_time' => Carbon::now()->addDays(10)->addHours(8)->format('Y-m-d H:i:s'),
+        'max_capacity' => 100,
+        'timezone' => 'Invalid/Timezone' // Invalid timezone
+    ];
+
+    $response = $this->postJson('/api/events', $eventData);
+
+    $response->assertStatus(422)
+            ->assertJsonValidationErrors(['timezone']);
+}
 }
