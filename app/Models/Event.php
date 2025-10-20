@@ -128,26 +128,59 @@ class Event extends Model
     }
 
     public function scopeSearch(Builder $query, string $searchTerm, array $fields): Builder
-    {
-        return $query->where(function ($q) use ($searchTerm, $fields) {
-            foreach ($fields as $field) {
-                if ($field === 'start_time' || $field === 'end_time') {
-                    try {
-                        $searchDate = Carbon::parse($searchTerm)->format('Y-m-d');
-                        $q->orWhereDate($field, $searchDate);
-                    } catch (\Exception $e) {
-                        continue;
-                    }
-                } elseif (in_array($field, ['max_capacity', 'current_attendees'])) {
-                    if (is_numeric($searchTerm)) {
-                        $q->orWhere($field, $searchTerm);
-                    }
-                } else {
-                    $q->orWhere($field, 'ILIKE', '%' . $searchTerm . '%');
+{
+    return $query->where(function ($q) use ($searchTerm, $fields) {
+        $connection = config('database.default');
+        
+        foreach ($fields as $field) {
+            if ($field === 'start_time' || $field === 'end_time') {
+                try {
+                    $searchDate = Carbon::parse($searchTerm)->format('Y-m-d');
+                    $q->orWhereDate($field, $searchDate);
+                } catch (\Exception $e) {
+                    continue;
                 }
+            } elseif (in_array($field, ['max_capacity', 'current_attendees'])) {
+                if (is_numeric($searchTerm)) {
+                    $q->orWhere($field, $searchTerm);
+                }
+            } else {
+                // Database-agnostic case-insensitive search
+                $this->addCaseInsensitiveSearch($q, $field, $searchTerm, $connection);
             }
-        });
+        }
+    });
+}
+
+/**
+ * Add case-insensitive search based on database type
+ */
+private function addCaseInsensitiveSearch($query, string $field, string $searchTerm, string $connection): void
+{
+    $searchTerm = strtolower($searchTerm);
+    
+    switch ($connection) {
+        case 'sqlite':
+            // SQLite: Use LOWER() function
+            $query->orWhereRaw('LOWER(' . $field . ') LIKE ?', ['%' . $searchTerm . '%']);
+            break;
+            
+        case 'mysql':
+            // MySQL: Use LOWER() or COLLATE for case-insensitive search
+            $query->orWhereRaw('LOWER(' . $field . ') LIKE ?', ['%' . $searchTerm . '%']);
+            break;
+            
+        case 'pgsql':
+            // PostgreSQL: Use ILIKE (case-insensitive)
+            $query->orWhere($field, 'ILIKE', '%' . $searchTerm . '%');
+            break;
+            
+        default:
+            // Fallback: Use LIKE (may be case-sensitive depending on database)
+            $query->orWhere($field, 'LIKE', '%' . $searchTerm . '%');
+            break;
     }
+}
 
     // Add this method to the Event model class
 public function attendees()
