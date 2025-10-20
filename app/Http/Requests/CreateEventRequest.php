@@ -36,7 +36,7 @@ class CreateEventRequest extends FormRequest
             'name' => 'required|string|max:255',
             'location' => 'required|string|max:255',
             'start_time' => 'required|date',
-            'end_time' => 'required|date|after:start_time',
+            'end_time' => 'required|date',
             'max_capacity' => 'required|integer|min:1|max:10000',
             'timezone' => 'required|string|timezone',
         ];
@@ -56,8 +56,7 @@ class CreateEventRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
-        // REMOVE UTC conversion from here - NO CONVERSION IN prepareForValidation
-        // Just do basic parsing if needed, but no timezone conversion
+        // Just ensure proper formatting, no timezone conversion
         if ($this->has('start_time') && !empty($this->start_time)) {
             $this->merge([
                 'start_time' => Carbon::parse($this->start_time)->format('Y-m-d H:i:s'),
@@ -89,9 +88,17 @@ class CreateEventRequest extends FormRequest
 
             try {
                 // Parse times in the specified timezone for validation
-                $startTimeInTz = Carbon::parse($startTime)->setTimezone($timezone);
-                $endTimeInTz = Carbon::parse($endTime)->setTimezone($timezone);
+                $startTimeInTz = Carbon::createFromFormat('Y-m-d H:i:s', $startTime, $timezone);
+                $endTimeInTz = Carbon::createFromFormat('Y-m-d H:i:s', $endTime, $timezone);
                 $nowInTz = Carbon::now($timezone);
+
+                \Log::info('Timezone Validation Debug', [
+                    'input_start_time' => $startTime,
+                    'timezone' => $timezone,
+                    'parsed_start_time' => $startTimeInTz->format('Y-m-d H:i:s P'),
+                    'current_time_in_tz' => $nowInTz->format('Y-m-d H:i:s P'),
+                    'is_future' => $startTimeInTz->gt($nowInTz) ? 'YES' : 'NO'
+                ]);
 
                 // Validate start time is in the future IN THE SPECIFIED TIMEZONE
                 if ($startTimeInTz->lte($nowInTz)) {
@@ -105,35 +112,40 @@ class CreateEventRequest extends FormRequest
                 // Validate end time is after start time
                 if ($endTimeInTz->lte($startTimeInTz)) {
                     $validator->errors()->add('end_time', 
-                        'End time must be after start time in the specified timezone.'
+                        "End time must be after start time. " .
+                        "Start time: " . $startTimeInTz->format('Y-m-d H:i:s') .
+                        ", End time: " . $endTimeInTz->format('Y-m-d H:i:s')
                     );
                 }
 
             } catch (\Exception $e) {
-                $validator->errors()->add('start_time', 'Failed to parse date times with the specified timezone.');
+                \Log::error('Timezone validation failed', ['error' => $e->getMessage()]);
+                $validator->errors()->add('start_time', 'Failed to parse date times with the specified timezone: ' . $e->getMessage());
             }
         });
     }
 
     /**
-     * Convert to UTC after validation passes - SINGLE CONVERSION POINT
+     * Convert to UTC after validation passes
      */
     public function getValidatedData(): array
     {
         $validated = parent::validated();
         $timezone = $validated['timezone'];
 
-        \Log::info('Single UTC Conversion - Starting', [
+        \Log::info('UTC Conversion - Starting', [
             'original_start' => $validated['start_time'],
             'original_end' => $validated['end_time'],
-            'timezone' => $timezone
+            'timezone' => $timezone,
+            'current_time_utc' => Carbon::now('UTC')->format('Y-m-d H:i:s P'),
+            'current_time_input_tz' => Carbon::now($timezone)->format('Y-m-d H:i:s P')
         ]);
 
-        // Convert times to UTC for storage - ONLY ONCE
+        // Convert times to UTC for storage
         $validated['start_time'] = $this->convertToUTC($validated['start_time'], $timezone);
         $validated['end_time'] = $this->convertToUTC($validated['end_time'], $timezone);
 
-        \Log::info('Single UTC Conversion - Completed', [
+        \Log::info('UTC Conversion - Completed', [
             'converted_start' => $validated['start_time'],
             'converted_end' => $validated['end_time']
         ]);
@@ -144,35 +156,12 @@ class CreateEventRequest extends FormRequest
     private function convertToUTC(string $dateTime, string $timezone): string
     {
         try {
-            \Log::info('UTC Conversion - Using createFromFormat', [
-                'input' => $dateTime,
-                'timezone' => $timezone
-            ]);
-
-            // USE createFromFormat with explicit timezone
+            // Use createFromFormat with explicit timezone
             $carbon = Carbon::createFromFormat('Y-m-d H:i:s', $dateTime, $timezone);
-            
-            $converted = $carbon->setTimezone('UTC')->format('Y-m-d H:i:s');
-
-            \Log::info('UTC Conversion - Result', [
-                'input' => $dateTime . ' ' . $timezone,
-                'output' => $converted . ' UTC',
-                'method' => 'createFromFormat'
-            ]);
-
-            return $converted;
-            
+            return $carbon->setTimezone('UTC')->format('Y-m-d H:i:s');
         } catch (\Exception $e) {
-            \Log::error('UTC conversion failed', [
-                'datetime' => $dateTime,
-                'timezone' => $timezone,
-                'error' => $e->getMessage()
-            ]);
-            
+            \Log::error('UTC conversion failed', ['error' => $e->getMessage()]);
             return $dateTime;
         }
     }
-
-    // Remove these extra methods - they're not needed
-    // public static function convertToUTC2() and public static function testConversionFlow()
 }
