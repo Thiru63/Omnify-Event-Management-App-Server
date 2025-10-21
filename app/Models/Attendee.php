@@ -51,8 +51,40 @@ class Attendee extends Model
     public function scopeSearch($query, string $searchTerm)
     {
         return $query->where(function ($q) use ($searchTerm) {
-            $q->where('name', 'ILIKE', '%' . $searchTerm . '%')
-              ->orWhere('email', 'ILIKE', '%' . $searchTerm . '%');
+            $connection = config('database.default');
+            $searchTerm = strtolower($searchTerm);
+            
+            // Database-agnostic case-insensitive search
+            $this->addCaseInsensitiveSearch($q, 'name', $searchTerm, $connection);
+            $this->addCaseInsensitiveSearch($q, 'email', $searchTerm, $connection);
         });
+    }
+
+    /**
+     * Add case-insensitive search based on database type
+     */
+    private function addCaseInsensitiveSearch($query, string $field, string $searchTerm, string $connection): void
+    {
+        switch ($connection) {
+            case 'sqlite':
+                // SQLite: Use LOWER() function
+                $query->orWhereRaw('LOWER(' . $field . ') LIKE ?', ['%' . $searchTerm . '%']);
+                break;
+                
+            case 'mysql':
+                // MySQL: Use LOWER() function
+                $query->orWhereRaw('LOWER(' . $field . ') LIKE ?', ['%' . $searchTerm . '%']);
+                break;
+                
+            case 'pgsql':
+                // PostgreSQL: Use ILIKE (case-insensitive)
+                $query->orWhere($field, 'ILIKE', '%' . $searchTerm . '%');
+                break;
+                
+            default:
+                // Fallback: Use LIKE (may be case-sensitive depending on database)
+                $query->orWhere($field, 'LIKE', '%' . $searchTerm . '%');
+                break;
+        }
     }
 }
